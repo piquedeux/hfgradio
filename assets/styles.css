@@ -176,11 +176,16 @@ body {
 }
 
 .shows-container.show {
-    display: block;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 1200px;
+ margin: 0 auto; text-align: center;}
+
+.shows-buttons {
+margin-top: 1rem; display: flex; justify-content: center; gap: 10px;
 }
+
 
 footer {
   display: flex;
