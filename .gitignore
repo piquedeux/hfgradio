@@ -1,0 +1,57 @@
+# macOS
+.DS_Store
+Thumbs.db
+
+# IDEs / editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Node / PHP dependencies
+node_modules/
+vendor/
+
+# Environment files
+.env
+.env.local
+
+# Logs and temp
+*.log
+npm-debug.log*
+yarn-error.log*
+/tmp/
+/temp/
+.cache/
+
+# Build / dist
+dist/
+build/
+
+# Uploads / large media (uncomment if you want to track project images)
+/assets/projects/*
+/assets/large/
+/uploads/
+
+# Contact log (contains messages)
+/content/contact-log.txt
+
+# Design / source files (large)
+*.psd
+*.ai
+*.sketch
+*.xd
+
+# Video / audio sources
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Backups / swap
+*.bak
+*.swp
+*~
+
+# Keep trackable empty folders via .gitkeep
+!.gitkeep
