@@ -174,7 +174,10 @@ redraw();
 setInterval(redraw, 2000);
 
 const toggleBtn = document.getElementById('toggleDotsBtn');
-let dotsVisible = true;
+// Start with dots hidden; show them on first burger click
+let dotsVisible = false;
+canvas.style.display = 'none';
+toggleBtn.title = 'add dots';
 
 toggleBtn.addEventListener('click', () => {
     dotsVisible = !dotsVisible;

@@ -221,3 +221,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     setInterval(updateShowSchedules, 300000);
     updateShowSchedules();
 });
+
+    // Logo scale: keep static (no click toggle)
+    document.addEventListener('DOMContentLoaded', function() {
+        var logoContainer = document.getElementById('logoContainer');
+        var logoImgs = logoContainer ? logoContainer.querySelectorAll('.logo-img') : [];
+        var logoFill = logoContainer ? logoContainer.querySelector('.logo-fill') : null;
+        var scaleTargets = logoImgs ? Array.from(logoImgs) : [];
+        if (logoFill) {
+            scaleTargets.push(logoFill);
+        }
+
+        if (logoContainer && scaleTargets.length) {
+            // Apply initial scaled state only, no click handler
+            logoContainer.classList.add('scaled');
+            scaleTargets.forEach(function(el) {
+                el.classList.add('scaled');
+            });
+        }
+    });
