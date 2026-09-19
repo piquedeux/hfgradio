@@ -183,4 +183,6 @@ toggleBtn.addEventListener('click', () => {
     dotsVisible = !dotsVisible;
     canvas.style.display = dotsVisible ? 'block' : 'none';
     toggleBtn.title = dotsVisible ? 'remove dots' : 'add dots';
+    toggleBtn.textContent = dotsVisible ? 'HIDE DOTS' : 'SHOW DOTS';
+    toggleBtn.setAttribute('aria-pressed', String(dotsVisible));
 });
