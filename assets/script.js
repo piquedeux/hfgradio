@@ -1,242 +1,46 @@
-document.addEventListener("DOMContentLoaded", async () => {
-    const liveBanner = document.getElementById('liveBanner');
-    const airtimeContainer = document.getElementById('airtime-player-container');
-    const offlineNotification = document.getElementById('offlineNotification');
-    const nowPlayingText = document.getElementById('nowPlayingText');
-    const nextUpText = document.getElementById('nextUpText');
-    const currentShowTitle = document.getElementById('currentShowTitle');
-    const currentShowImage = document.getElementById('currentShowImage');
-    const toggleHeader = document.getElementById('toggleHeader');
-    const showsContainer = document.getElementById('showsContainer');
-    const toggleCalendar = document.getElementById('toggleCalendar');
-    const calendarContainer = document.getElementById('calendarContainer');
-    const calendarContent = document.getElementById('calendarContent');
+const banner=document.getElementById('liveBanner');
+const audio=document.getElementById('radioAudio');
+const play=document.getElementById('playButton');
+const message=document.getElementById('playerMessage');
+let source='azura',stream='',pending=false,azuraState='unknown',azuraTitle='',volume=1,muted=false,operation=0,lastVolume=1;
+function selectSource(){if(!audio)return;source='azura';if(!pending&&audio.paused)message.textContent=azuraState==='live'?'Live from Offenbach':azuraState==='autodj'?'On air':'Currently offline';playbackUI();}
+function setVolume(value){
+ volume=value;muted=value===0;if(value>0)lastVolume=value;
+ audio.volume=value;audio.muted=muted;
+ document.getElementById('volume').value=String(value);
+ const button=document.getElementById('muteButton');button.textContent=muted?'UNMUTE':'MUTE';button.setAttribute('aria-pressed',String(muted));
 
-    offlineNotification.style.display = 'none';
-    let isPlaying = false;
+}
+function renderStatus(){
+ const state=azuraState;
+ if(banner){banner.dataset.state=state;banner.hidden=state!=='live';}
+ const title=document.getElementById('currentShowTitle');if(title)title.textContent=source==='azura'?azuraTitle:'';
+}
+function playbackUI(){if(!play)return;const playing=!audio.paused;play.textContent=pending?'LOADING':playing?'STOP':'PLAY';play.setAttribute('aria-pressed',String(playing));}
+async function status(){
+ try{const response=await fetch('/api/nowplaying.php',{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!response.ok)throw Error();const data=await response.json();azuraState=data.live?.is_live===true?'live':data.is_online===true?'autodj':'offline';stream=data.station?.listen_url||'';azuraTitle=data.live?.is_live?data.live.streamer_name||'Live from Offenbach':data.is_online?data.now_playing?.song?.text||'':'';}
+ catch{azuraState='unknown';stream='';azuraTitle='';}
+ selectSource();renderStatus();setTimeout(status,15000);
+}
+if(audio){
+ play.addEventListener('click',async()=>{
+ const attempt=++operation;if(!audio.paused||pending){pending=false;audio.pause();audio.removeAttribute('src');audio.load();playbackUI();return;}if(!stream){message.textContent='AzuraCast · No event stream connected';return;}pending=true;playbackUI();audio.src=stream;try{await audio.play();if(attempt===operation)message.textContent='AzuraCast · Listening';}catch{if(attempt===operation)message.textContent='Playback could not start. Press PLAY to retry.';}finally{if(attempt===operation){pending=false;playbackUI();}}
+ });
+ for(const event of ['playing','pause','ended'])audio.addEventListener(event,()=>{pending=false;playbackUI();});
+ audio.addEventListener('error',()=>{pending=false;if(source==='azura')message.textContent='Stream interrupted. Press PLAY to reconnect.';playbackUI();});
+ const chat=document.getElementById('radioChat');
+ if(chat){
+ document.getElementById('chatButton').addEventListener('click',()=>{
+  const frame=chat.querySelector('iframe');if(!frame.getAttribute('src'))frame.src=frame.dataset.src;
+  if(chat.open)chat.close();
+  if(window.innerWidth<=700){chat.showModal();document.body.classList.add('chat-open');}else{chat.show();chat.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});}
+ });
+ document.getElementById('closeChat').addEventListener('click',()=>chat.close());
+ chat.addEventListener('close',()=>{document.body.classList.remove('chat-open');document.getElementById('chatButton').focus({preventScroll:true});});
+ }
+ document.getElementById('volume').addEventListener('input',e=>setVolume(Number(e.target.value)));
+ document.getElementById('muteButton').addEventListener('click',()=>setVolume(muted?lastVolume:0));
 
-    async function checkLiveShow() {
-        try {
-            const response = await fetch('https://hfgradio.airtime.pro/api/live-info');
-            const data = await response.json();
-
-            const currentShow = data?.currentShow?.[0];
-
-            if (currentShow) {
-                const now = new Date();
-                const startTime = new Date(currentShow.starts);
-                const endTime = new Date(currentShow.ends);
-
-                if (now >= startTime && now <= endTime) {
-                    liveBanner.classList.add('show');
-                    offlineNotification.classList.remove('show');
-
-                    document.querySelectorAll('.marquee-content').forEach(content => {
-                        content.style.animation = '';
-                    });
-
-                    currentShowTitle.textContent = currentShow.name || 'Untitled Show';
-
-                    // Fallback zur Standardgrafik, falls kein Bild gefunden
-                    currentShowImage.src = `https://hfgradio.airtime.pro/api/show-logo?id=${currentShow.id}`;
-                    currentShowImage.onerror = () => {
-                        currentShowImage.src = '/icon.png';
-                    };
-
-                    isPlaying = true;
-                    return;
-                }
-            }
-            handleOfflineState();
-        } catch (error) {
-            console.error('Failed to fetch live show info:', error);
-            handleOfflineState();
-        }
-    }
-
-    function handleOfflineState() {
-        liveBanner.classList.remove('show');
-        offlineNotification.classList.add('show');
-
-        document.querySelectorAll('.marquee-content').forEach(content => {
-            content.style.animation = 'none';
-        });
-
-        isPlaying = false;
-    }
-
-    offlineNotification.addEventListener('click', () => {
-        offlineNotification.classList.add('hide');
-        offlineNotification.classList.remove('show');
-        showsContainer.classList.add('show');
-        toggleHeader.querySelector('text').textContent = 'ARCHIVE ▲';
-        setTimeout(() => {
-            showsContainer.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-    });
-
-    setInterval(checkLiveShow, 30000);
-    checkLiveShow();
-
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('clockText').textContent = now.toLocaleTimeString('de-DE', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    }
-
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    async function updateTrackInfo() {
-        try {
-            const response = await fetch('https://hfgradio.airtime.pro/api/live-info');
-            const data = await response.json();
-
-            const currentTrack = `${data?.current?.name || ''} ${data?.current?.title || ''}`.trim();
-            const nextTrack = `${data?.next?.name || ''} ${data?.next?.title || ''}`.trim();
-
-            nowPlayingText.textContent = currentTrack || 'No track information';
-            nextUpText.textContent = nextTrack || 'No upcoming track information';
-        } catch (error) {
-            console.error('Failed to fetch track info:', error);
-        }
-    }
-
-    setInterval(updateTrackInfo, 30000);
-    updateTrackInfo();
-
-    toggleHeader.addEventListener('click', () => {
-        showsContainer.classList.toggle('show');
-        toggleHeader.querySelector('text').textContent = showsContainer.classList.contains('show')
-            ? 'ARCHIVE ▲'
-            : 'ARCHIVE ▼';
-    });
-
-    if (document.getElementById('mobileChatButton')) {
-        document.getElementById('mobileChatButton').addEventListener('click', () => {
-            window.open('https://chatango.com/box?hfgstation', '_blank');
-        });
-    }
-
-    toggleCalendar.addEventListener('click', () => {
-        calendarContainer.classList.toggle('show');
-        toggleCalendar.querySelector('text').textContent = calendarContainer.classList.contains('show')
-            ? 'UPCOMING SHOWS ▲'
-            : 'UPCOMING SHOWS ▼';
-
-        if (!calendarContainer.classList.contains('show')) {
-            calendarContainer.querySelectorAll('.show-inner').forEach(card => {
-                card.style.transform = 'rotateY(0)';
-            });
-        }
-    });
-
-    async function updateShowSchedules() {
-        try {
-            const response = await fetch('https://hfgradio.airtime.pro/api/week-info');
-            const data = await response.json();
-
-            calendarContent.innerHTML = '';
-            const now = new Date();
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            let showsFound = 0;
-
-            for (const [dayName, shows] of Object.entries(data)) {
-                if (Array.isArray(shows)) {
-                    for (const show of shows) {
-                        const showDate = new Date(show.starts);
-                        if (showDate > now) {
-                            const showDay = showDate.getDay();
-                            const instagramHandle = show.description?.match(/@([a-zA-Z0-9._]+)/)?.[1];
-
-                            const showElement = document.createElement('div');
-                            showElement.className = 'calendar-item';
-
-                            showElement.innerHTML = `
-                                <div class="show-inner">
-                                    <div class="show-front">
-                                        <div class="calendar-time">
-                                            <span class="day">${days[showDay]}</span>
-                                            <span class="time">${showDate.toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}</span>
-                                        </div>
-                                        <div class="calendar-details">
-                                            <h3>${show.name || 'Untitled Show'}</h3>
-                                            <p>${show.description || 'No description available'}</p>
-                                        </div>
-                                    </div>
-                                    ${instagramHandle ? `
-                                        <div class="show-back">
-                                            <button class="back-button"></button>
-                                            <iframe 
-                                                src="https://www.instagram.com/${instagramHandle}/embed" 
-                                                frameborder="0" 
-                                                scrolling="no" 
-                                                allowtransparency="true"
-                                                width="100%"
-                                                height="100%">
-                                            </iframe>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
-
-                            if (instagramHandle) {
-                                const showInner = showElement.querySelector('.show-inner');
-                                const backButton = showElement.querySelector('.back-button');
-
-                                showElement.addEventListener('click', (e) => {
-                                    if (!e.target.classList.contains('back-button')) {
-                                        showInner.style.transform = 'rotateY(180deg)';
-                                    }
-                                });
-
-                                backButton.addEventListener('click', (e) => {
-                                    e.stopPropagation();
-                                    showInner.style.transform = 'rotateY(0)';
-                                });
-                            }
-
-                            calendarContent.appendChild(showElement);
-                            showsFound++;
-                        }
-                    }
-                }
-            }
-
-            if (showsFound === 0) {
-                calendarContent.innerHTML = '<p>No upcoming shows scheduled</p>';
-            }
-        } catch (error) {
-            console.error('Failed to fetch show schedules:', error);
-            calendarContent.innerHTML = '<p>Failed to load show schedules</p>';
-        }
-    }
-
-    setInterval(updateShowSchedules, 300000);
-    updateShowSchedules();
-});
-
-    // Logo scale: keep static (no click toggle)
-    document.addEventListener('DOMContentLoaded', function() {
-        var logoContainer = document.getElementById('logoContainer');
-        var logoImgs = logoContainer ? logoContainer.querySelectorAll('.logo-img') : [];
-        var logoFill = logoContainer ? logoContainer.querySelector('.logo-fill') : null;
-        var scaleTargets = logoImgs ? Array.from(logoImgs) : [];
-        if (logoFill) {
-            scaleTargets.push(logoFill);
-        }
-
-        if (logoContainer && scaleTargets.length) {
-            // Apply initial scaled state only, no click handler
-            logoContainer.classList.add('scaled');
-            scaleTargets.forEach(function(el) {
-                el.classList.add('scaled');
-            });
-        }
-    });
+}
+function clock(){const el=document.getElementById('clockText');if(el)el.textContent=new Date().toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin'});}clock();setInterval(clock,1000);status();
+for(const a of document.querySelectorAll('nav a'))if(a.pathname===location.pathname)a.setAttribute('aria-current','page');
