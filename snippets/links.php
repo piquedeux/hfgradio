@@ -1,0 +1,1 @@
+<section class="page-title"><span><?= content_text('page.links.eyebrow','LINKS') ?></span><h1><?= content_text('page.links.title','LINKS') ?></h1></section><p id="linksStatus" class="load-status" role="status"><?= content_text('page.links.loading','Loading links…') ?></p><div id="linksEntries"></div>

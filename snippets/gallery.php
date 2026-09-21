@@ -1,1 +1,1 @@
-<section class="page-title"><span>IMAGE ARCHIVE</span><h1>LIVE IN REAL LIFE</h1></section><p id="galleryStatus" class="load-status" role="status">Loading photographs…</p><div id="gallery" class="gallery"></div>
+<section class="page-title"><span><?= content_text('page.gallery.eyebrow','IMAGE ARCHIVE') ?></span><h1><?= content_text('page.gallery.title','LIVE IN REAL LIFE') ?></h1></section><p id="galleryStatus" class="load-status" role="status"><?= content_text('page.gallery.loading','Loading photographs…') ?></p><div id="gallery" class="gallery"></div>

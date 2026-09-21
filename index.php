@@ -8,6 +8,18 @@ if(preg_match('~^/(assets|material)/~',$path)){
  http_response_code(404);exit;
 }
 
+function content_values(){
+ $file=__DIR__.'/content/content.txt';$values=[];
+ if(!is_file($file))return $values;
+ foreach(file($file,FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES) as $line){$line=trim($line);if($line===''||$line[0]==='#')continue;$separator=strpos($line,'=');if($separator===false)continue;$key=trim(substr($line,0,$separator));$value=trim(substr($line,$separator+1));if($key!=='')$values[$key]=str_replace('\\n',"\n",$value);}
+ return $values;
+}
+$content=content_values();
+function content_text($key,$fallback=''){global $content;return htmlspecialchars($content[$key]??$fallback,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
+function content_value($key,$fallback=''){global $content;return $content[$key]??$fallback;}
+function content_url($key,$fallback=''){return htmlspecialchars(content_value($key,$fallback),ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
+function content_lines($key,$fallback=''){return nl2br(content_text($key,$fallback),false);}
+
 // Public folder adapter. No account credentials; keep last good listing if Google is unavailable.
 function drive_cache_dir(){ $dir=sys_get_temp_dir().'/hfg-drive-'.hash('sha256',__DIR__);if(!is_dir($dir))mkdir($dir,0700,true);return $dir; }
 function drive_listing(){
@@ -163,8 +175,8 @@ $json=json_encode(['entries'=>$entries,'stale'=>false],JSON_INVALID_UTF8_SUBSTIT
 exit;
 default:http_response_code(404);echo json_encode(['error'=>'Not found']);exit;}}
 if($path==='/chat.html'||($_GET['view']??'')==='chat'){require __DIR__.'/snippets/chat.php';exit;}
-$routes=['/'=>'home','/archive/'=>'archive','/live-in-real-life/'=>'gallery','/press/'=>'press','/imprint/'=>'imprint','/colophon/'=>'colophon'];
+$routes=['/'=>'home','/archive/'=>'archive','/live-in-real-life/'=>'gallery','/links/'=>'links','/imprint/'=>'imprint','/colophon/'=>'colophon'];
 $route=$path==='/index.php'||trim($path,'/')===''?'/':'/'.trim($path,'/').'/';
 if(!isset($routes[$route])){http_response_code(404);echo 'Page not found';exit;}
-$page=$routes[$route];$titles=['home'=>'Radio','archive'=>'Archive','gallery'=>'Live in real life','press'=>'Press','imprint'=>'Imprint','colophon'=>'Colophon'];
-?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $titles[$page] ?> — HFG RADIO</title><meta name="description" content="HFG Radio. Independent radio from Offenbach am Main."><link rel="icon" href="/material/logofinalb.png"><link rel="stylesheet" href="/assets/styles.css"><script defer src="/assets/script.js"></script><script defer src="/assets/archive.js"></script><script defer src="/assets/gallery.js"></script><script defer src="/assets/press.js"></script><script defer src="/assets/navigation.js"></script></head><body class="<?= $page==='home'?'home':'subpage '.$page.'-page' ?>"><a class="skip" href="#main">Skip to content</a><?php require __DIR__.'/snippets/header.php'; require __DIR__.'/snippets/player.php'; ?><main id="main"><?php foreach($titles as $key=>$title): ?><div data-page="<?= $key ?>" <?= $page!==$key?'hidden':'' ?>><?php require __DIR__.'/snippets/'.$key.'.php'; ?></div><?php endforeach; ?></main><?php require __DIR__.'/snippets/footer.php'; ?><canvas id="dotPatternCanvas" aria-hidden="true"></canvas><script src="/assets/dots.js"></script></body></html>
+$page=$routes[$route];$titles=['home'=>content_value('page.home.title','Radio'),'archive'=>content_value('page.archive.title','Archive'),'gallery'=>content_value('page.gallery.title','Live in real life'),'links'=>content_value('page.links.title','Links'),'imprint'=>content_value('imprint.title','Imprint'),'colophon'=>content_value('colophon.title','Colophon')];
+?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($titles[$page],ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?> — <?= content_text('site.name','HFG RADIO') ?></title><meta name="description" content="<?= content_text('site.description','HFG Radio. Independent radio from Offenbach am Main.') ?>"><link rel="icon" href="/material/logofinalb.png"><link rel="stylesheet" href="/assets/styles.css"><script defer src="/assets/script.js"></script><script defer src="/assets/archive.js"></script><script defer src="/assets/gallery.js"></script><script defer src="/assets/press.js"></script><script defer src="/assets/navigation.js"></script></head><body class="<?= $page==='home'?'home':'subpage '.$page.'-page' ?>"><a class="skip" href="#main">Skip to content</a><?php require __DIR__.'/snippets/header.php'; require __DIR__.'/snippets/player.php'; ?><main id="main"><?php foreach($titles as $key=>$title): ?><div data-page="<?= $key ?>" <?= $page!==$key?'hidden':'' ?>><?php require __DIR__.'/snippets/'.$key.'.php'; ?></div><?php endforeach; ?></main><?php require __DIR__.'/snippets/footer.php'; ?><canvas id="dotPatternCanvas" aria-hidden="true"></canvas><script src="/assets/dots.js"></script></body></html>
