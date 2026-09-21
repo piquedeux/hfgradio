@@ -1,3 +1,4 @@
-azuracast/backups/
 .DS_Store
-azuracast/.installed
+README.md
+.vscode
+.htaccess

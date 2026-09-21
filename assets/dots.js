@@ -181,6 +181,8 @@ toggleBtn.title = 'add dots';
 
 toggleBtn.addEventListener('click', () => {
     dotsVisible = !dotsVisible;
+    document.body.classList.toggle('dots-visible', dotsVisible);
+    document.dispatchEvent(new Event('dots-change'));
     canvas.style.display = dotsVisible ? 'block' : 'none';
     toggleBtn.title = dotsVisible ? 'remove dots' : 'add dots';
     toggleBtn.textContent = dotsVisible ? 'HIDE DOTS' : 'SHOW DOTS';

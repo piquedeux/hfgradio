@@ -1,0 +1,85 @@
+# HFG RADIO content configuration
+# Edit the value after =. Use \n for a line break.
+
+site.name=HFG RADIO
+site.location=OFFENBACH AM MAIN
+site.description=HFG Radio. Independent radio from Offenbach am Main.
+
+nav.radio=RADIO
+nav.archive=ARCHIVE
+nav.live=LIVE IN REAL LIFE
+nav.links=LINKS
+
+footer.instagram.label=INSTAGRAM
+footer.instagram.url=https://instagram.com/hfgradio
+footer.colophon=COLOPHON
+footer.colophon.url=/colophon/
+footer.imprint=IMPRINT
+footer.imprint.url=/imprint/
+footer.dots.show=SHOW DOTS
+footer.dots.hide=HIDE DOTS
+
+player.live=LIVE
+player.offline=OFFLINE
+player.play=PLAY
+player.stop=STOP
+player.next=NEXT
+player.mute=MUTE
+player.unmute=UNMUTE
+player.volume=VOLUME
+player.chat=CHAT
+player.close=CLOSE
+player.chat.aria=HFG Radio chat
+player.play.aria=Play radio
+player.pause.aria=Pause radio
+player.archive.label=Archive recording
+
+page.home.title=Radio
+page.archive.eyebrow=LISTEN AGAIN
+page.archive.title=ARCHIVE
+page.archive.soundcloud=SoundCloud +
+page.archive.soundcloud.url=https://soundcloud.com/hfg-radio
+page.archive.listen=LISTEN
+page.archive.date=DATE
+page.archive.programme=PROGRAMME
+page.archive.artists=ARTISTS
+page.archive.loading=Loading recordings…
+page.gallery.eyebrow=IMAGE ARCHIVE
+page.gallery.title=LIVE IN REAL LIFE
+page.gallery.loading=Loading photographs…
+page.links.eyebrow=LINKS
+page.links.title=LINKS
+page.links.loading=Loading links…
+
+home.chat.open=OPEN
+home.chat.close=CLOSE
+home.description.1=HFG RADIO is an open platform for exchange, connection and experimental practice at HfG Offenbach. Initiated and run by students, the radio has become an integral part of the university over the past semesters. It offers an accessible space where students, teachers and guests can come together, share ideas and explore new forms of collaboration.
+home.description.2=As an ongoing and continually growing project, HFG RADIO has become a platform that reaches far beyond the production of individual programmes. It is a place for listening, exchange and collective creation—and an important contribution to the open, experimental and collaborative culture of HfG Offenbach.
+home.cooperation=Have an idea? Let’s collaborate.
+home.cooperation.email=hfgradio@gmail.com
+home.cooperation.email.url=mailto:hfgradio@gmail.com
+home.cooperation.email.aria=Email hfgradio@gmail.com
+
+imprint.section=INFORMATION
+imprint.title=IMPRINT
+imprint.station.label=STATION
+imprint.station.value=HFG Radio\nOffenbach am Main
+imprint.operator.label=RESPONSIBLE OPERATOR
+imprint.operator.value=To be supplied
+imprint.address.label=POSTAL ADDRESS
+imprint.address.value=To be supplied
+imprint.email.label=CONTACT EMAIL
+imprint.email.value=To be supplied
+
+colophon.section=INFORMATION
+colophon.title=COLOPHON
+colophon.idea.label=IDEA & CONCEPT
+colophon.idea.name=Nicolas Marino
+colophon.idea.url=https://instagram.com/mabirino
+colophon.website.label=WEBSITE
+colophon.website.name=Moritz Gauss
+colophon.website.url=https://moritzgauss.com
+colophon.live.label=OFFENBACH, LIVE
+colophon.live.text=The image inside the radio logo comes from the Deutscher Wetterdienst webcam.
+colophon.live.link=Deutscher Wetterdienst webcam
+colophon.live.url=https://opendata.dwd.de/weather/webcam/Offenbach-W/
