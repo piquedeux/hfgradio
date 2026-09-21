@@ -1,46 +1,27 @@
-const banner=document.getElementById('liveBanner');
-const audio=document.getElementById('radioAudio');
-const play=document.getElementById('playButton');
-const message=document.getElementById('playerMessage');
-let source='azura',stream='',pending=false,azuraState='unknown',azuraTitle='',volume=1,muted=false,operation=0,lastVolume=1;
-function selectSource(){if(!audio)return;source='azura';if(!pending&&audio.paused)message.textContent=azuraState==='live'?'Live from Offenbach':azuraState==='autodj'?'On air':'Currently offline';playbackUI();}
-function setVolume(value){
- volume=value;muted=value===0;if(value>0)lastVolume=value;
- audio.volume=value;audio.muted=muted;
- document.getElementById('volume').value=String(value);
- const button=document.getElementById('muteButton');button.textContent=muted?'UNMUTE':'MUTE';button.setAttribute('aria-pressed',String(muted));
-
-}
-function renderStatus(){
- const state=azuraState;
- if(banner){banner.dataset.state=state;banner.hidden=state!=='live';}
- const title=document.getElementById('currentShowTitle');if(title)title.textContent=source==='azura'?azuraTitle:'';
-}
-function playbackUI(){if(!play)return;const playing=!audio.paused;play.textContent=pending?'LOADING':playing?'STOP':'PLAY';play.setAttribute('aria-pressed',String(playing));}
+const banner=document.getElementById('liveBanner'),audio=document.getElementById('radioAudio'),play=document.getElementById('playButton'),message=document.getElementById('playerMessage');
+let stream='',stationState='unknown',stationTitle='',mode='idle',pending=false,operation=0,lastVolume=1,archivePromise=null,queue=[],twitch=null,twitchReady=null,twitchLive=false,twitchTitle='',source='azura',wantsPlayback=false;
+function archive(){return archivePromise||(archivePromise=fetch('/index.php?api=archive').then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>d.posts).catch(e=>{archivePromise=null;throw e}));}
+function setVolume(value){if(twitch){try{twitch.setVolume(value);twitch.setMuted(value===0);}catch{}}audio.volume=value;audio.muted=value===0;if(value>0)lastVolume=value;document.getElementById('volume').value=String(value);const b=document.getElementById('muteButton');b.textContent=value===0?'UNMUTE':'MUTE';b.setAttribute('aria-pressed',String(value===0));}
+function playbackUI(){if(!audio)return;const active=mode==='twitch'?twitch&&!twitch.isPaused():!audio.paused;play.textContent=active?'STOP':'PLAY';play.setAttribute('aria-pressed',String(!!active));const weather=document.getElementById('weatherPlay');weather.setAttribute('aria-pressed',String(!!active));weather.setAttribute('aria-label',active?'Pause radio':'Play radio');}
+function renderStatus(){const archived=mode==='ident'||mode==='archive';const state=archived?'archive':twitchLive?'live':stationState;banner.dataset.state=state;banner.hidden=!archived&&state!=='live';banner.setAttribute('aria-label',archived?'Not live — archive playback':'Live on air');for(const text of banner.querySelectorAll('.marquee span'))text.textContent=archived?'NOT LIVE':'LIVE';if(mode==='idle'||mode==='live'||mode==='twitch'){message.textContent=twitchLive?'Live from Offenbach':stationState==='live'?'Live from Offenbach':stationState==='autodj'?'On air':stationState==='unknown'?'':'Currently offline · PLAY for a shuffled archive recording';document.getElementById('currentShowTitle').textContent=twitchLive?twitchTitle:stationTitle;}}
 async function status(){
- try{const response=await fetch('/api/nowplaying.php',{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!response.ok)throw Error();const data=await response.json();azuraState=data.live?.is_live===true?'live':data.is_online===true?'autodj':'offline';stream=data.station?.listen_url||'';azuraTitle=data.live?.is_live?data.live.streamer_name||'Live from Offenbach':data.is_online?data.now_playing?.song?.text||'':'';}
- catch{azuraState='unknown';stream='';azuraTitle='';}
- selectSource();renderStatus();setTimeout(status,15000);
+ const previous=source;
+ await Promise.allSettled([
+ (async()=>{try{const r=await fetch('/index.php?api=nowplaying',{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!r.ok)throw Error();const d=await r.json();stationState=d.live?.is_live?'live':d.is_online?'autodj':'offline';stream=d.is_online||d.live?.is_live?d.station?.listen_url||'':'';stationTitle=d.now_playing?.song?.text||d.live?.streamer_name||'';}catch{stationState='unknown';stream='';stationTitle='';}})(),
+ (async()=>{try{const r=await fetch('/index.php?api=twitch',{cache:'no-store',signal:AbortSignal.timeout(11000)});if(!r.ok)throw Error();const d=await r.json();twitchLive=d.live===true;twitchTitle=d.title||'';}catch{ /* Embed events remain available when metadata service fails. */ }})()
+ ]);
+ source=twitchLive?'twitch':stream?'azura':'archive';renderStatus();
+ if((mode==='live'||mode==='twitch')&&previous!==source&&wantsPlayback){audio.pause();if(twitch)twitch.pause();mode='idle';startPlayback(false);}
+ setTimeout(status,30000);
 }
-if(audio){
- play.addEventListener('click',async()=>{
- const attempt=++operation;if(!audio.paused||pending){pending=false;audio.pause();audio.removeAttribute('src');audio.load();playbackUI();return;}if(!stream){message.textContent='AzuraCast · No event stream connected';return;}pending=true;playbackUI();audio.src=stream;try{await audio.play();if(attempt===operation)message.textContent='AzuraCast · Listening';}catch{if(attempt===operation)message.textContent='Playback could not start. Press PLAY to retry.';}finally{if(attempt===operation){pending=false;playbackUI();}}
- });
- for(const event of ['playing','pause','ended'])audio.addEventListener(event,()=>{pending=false;playbackUI();});
- audio.addEventListener('error',()=>{pending=false;if(source==='azura')message.textContent='Stream interrupted. Press PLAY to reconnect.';playbackUI();});
- const chat=document.getElementById('radioChat');
- if(chat){
- document.getElementById('chatButton').addEventListener('click',()=>{
-  const frame=chat.querySelector('iframe');if(!frame.getAttribute('src'))frame.src=frame.dataset.src;
-  if(chat.open)chat.close();
-  if(window.innerWidth<=700){chat.showModal();document.body.classList.add('chat-open');}else{chat.show();chat.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});}
- });
- document.getElementById('closeChat').addEventListener('click',()=>chat.close());
- chat.addEventListener('close',()=>{document.body.classList.remove('chat-open');document.getElementById('chatButton').focus({preventScroll:true});});
- }
- document.getElementById('volume').addEventListener('input',e=>setVolume(Number(e.target.value)));
- document.getElementById('muteButton').addEventListener('click',()=>setVolume(muted?lastVolume:0));
+function initTwitch(){if(twitchReady)return twitchReady;twitchReady=new Promise((resolve,reject)=>{const holder=document.createElement('div');holder.id='twitchAudioEngine';holder.className='twitch-audio-engine';holder.setAttribute('aria-hidden','true');document.body.append(holder);const script=document.createElement('script');script.src='https://player.twitch.tv/js/embed/v1.js';const timer=setTimeout(()=>reject(Error('Twitch unavailable')),15000);script.onerror=()=>{clearTimeout(timer);reject(Error('Twitch unavailable'));};script.onload=()=>{twitch=new Twitch.Player(holder.id,{channel:'hfgradio',width:400,height:300,parent:[location.hostname],autoplay:false,muted:false});twitch.addEventListener(Twitch.Player.READY,()=>{clearTimeout(timer);twitch.setVolume(audio.volume);twitch.setMuted(audio.muted);resolve(twitch);});twitch.addEventListener(Twitch.Player.PLAYING,()=>{if(!wantsPlayback){twitch.pause();return;}pending=false;try{const qualities=twitch.getQualities();const audioOnly=qualities.find(q=>(typeof q==='string'?q:q.group)==='audio_only');if(audioOnly)twitch.setQuality('audio_only');}catch{}playbackUI();});twitch.addEventListener(Twitch.Player.PAUSE,playbackUI);twitch.addEventListener(Twitch.Player.PLAYBACK_BLOCKED,()=>{pending=false;message.textContent='Press PLAY to enable live audio.';playbackUI();});twitch.addEventListener(Twitch.Player.ONLINE,()=>{twitchLive=true;renderStatus();});twitch.addEventListener(Twitch.Player.OFFLINE,()=>{twitchLive=false;if(mode==='twitch'&&wantsPlayback){mode='idle';startPlayback(false);}renderStatus();});};document.head.append(script);});return twitchReady;}
+async function startPlayback(userClick=true){const attempt=++operation;wantsPlayback=true;pending=true;playbackUI();try{await initialStatus;if(attempt!==operation)return;if(twitchLive){audio.pause();mode='twitch';const player=await initTwitch();if(attempt!==operation)return;player.setVolume(audio.volume);player.setMuted(audio.muted);player.play();message.textContent='Live from Offenbach';renderStatus();}else if(stream){if(twitch)twitch.pause();mode='live';audio.src=stream;await audio.play();renderStatus();}else if(userClick||mode!=='idle'){mode='ident';audio.src='/assets/audio/station-ident.mp3';message.textContent='Station ident · A shuffled archive recording is next';archive().catch(()=>{});renderStatus();await audio.play();}}catch{if(attempt===operation){message.textContent=userClick?'Playback could not start. Press PLAY to retry.':'';}}finally{if(attempt===operation){pending=false;playbackUI();}}}
+async function nextRecording(){const attempt=operation;pending=true;playbackUI();try{if(!queue.length){queue=(await archive()).filter(p=>p.audio_url);for(let i=queue.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[queue[i],queue[j]]=[queue[j],queue[i]];}}if(attempt!==operation)return;const track=queue.pop();if(!track)throw Error('empty');mode='archive';const panel=document.getElementById('offlineRecording');panel.replaceChildren();if(track.artwork_url){const img=document.createElement('img');img.src=track.artwork_url;img.alt='';panel.append(img);}const label=document.createElement('p');label.textContent='NOT LIVE · SHUFFLED ARCHIVE';const heading=document.createElement('h2');heading.textContent=track.title;const link=document.createElement('a');link.textContent='OPEN ON SOUNDCLOUD';link.href=track.permalink_url;link.target='_blank';link.rel='noopener';panel.append(label,heading,link);panel.hidden=false;audio.src=track.audio_url;message.textContent='Now playing a shuffled archive recording';document.getElementById('currentShowTitle').textContent=track.title;renderStatus();await audio.play();}catch{if(attempt===operation)message.textContent='Archive playback could not start. Press PLAY to retry.';}finally{if(attempt===operation){pending=false;playbackUI();}}}
+if(audio){play.addEventListener('click',async()=>{document.dispatchEvent(new Event('radio-play'));const active=mode==='twitch'?twitch&&!twitch.isPaused():!audio.paused;if(active||pending){operation++;wantsPlayback=false;pending=false;audio.pause();if(twitch)twitch.pause();playbackUI();return;}if((mode==='archive'||mode==='ident')&&audio.src){wantsPlayback=true;audio.play().catch(()=>{message.textContent='Press PLAY to retry.';});return;}await startPlayback(true);});audio.addEventListener('ended',()=>{if(mode==='ident'||mode==='archive')nextRecording();else playbackUI();});for(const event of ['playing','pause'])audio.addEventListener(event,playbackUI);audio.addEventListener('error',()=>{pending=false;message.textContent='Audio unavailable. Press PLAY to retry.';playbackUI();});document.getElementById('volume').addEventListener('input',e=>setVolume(Number(e.target.value)));document.getElementById('muteButton').addEventListener('click',()=>setVolume(audio.muted||audio.volume===0?lastVolume:0));
+const chat=document.getElementById('radioChat');if(chat){document.getElementById('chatButton').addEventListener('click',()=>{if(window.innerWidth<=700){window.open('https://hfgstation.chatango.com/','_blank','noopener');return;}const frame=chat.querySelector('iframe');if(!frame.getAttribute('src'))frame.src=frame.dataset.src;if(chat.open){chat.close();return;}chat.show();document.getElementById('chatButton').setAttribute('aria-expanded','true');chat.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});});document.getElementById('closeChat').addEventListener('click',()=>chat.close());chat.addEventListener('close',()=>document.getElementById('chatButton').setAttribute('aria-expanded','false'));}}
+const marquee=document.getElementById('archiveMarquee');if(marquee)archive().then(items=>{const artworks=items.filter(p=>p.artwork_url).slice(0,24);for(let repeat=0;repeat<2;repeat++)for(const track of artworks){const link=document.createElement('a');link.href='/archive/';link.setAttribute('aria-label',track.title);if(repeat){link.tabIndex=-1;link.setAttribute('aria-hidden','true');}const img=document.createElement('img');img.src=track.artwork_url;img.alt=track.title;img.loading='lazy';link.append(img);marquee.append(link);}}).catch(()=>{marquee.parentElement.hidden=true;});
+function clock(){const text=document.getElementById('clockText');if(text)text.textContent=new Date().toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin'});}clock();setInterval(clock,1000);const initialStatus=status();initialStatus.then(()=>{if((twitchLive||stream)&&mode==='idle')startPlayback(false);});for(const a of document.querySelectorAll('nav a'))if(a.pathname===location.pathname)a.setAttribute('aria-current','page');
 
-}
-function clock(){const el=document.getElementById('clockText');if(el)el.textContent=new Date().toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin'});}clock();setInterval(clock,1000);status();
-for(const a of document.querySelectorAll('nav a'))if(a.pathname===location.pathname)a.setAttribute('aria-current','page');
+document.addEventListener('archive-play',()=>{operation++;wantsPlayback=false;pending=false;audio.pause();if(twitch)twitch.pause();playbackUI();});
+
+document.getElementById('weatherPlay').addEventListener('click',()=>play.click());

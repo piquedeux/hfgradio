@@ -1,0 +1,1 @@
+<section class="page-title"><span>INFORMATION</span><h1>IMPRINT</h1><span>HFG RADIO</span></section><div class="prose-table"><div><span>STATION</span><p>HFG Radio<br>Offenbach am Main</p></div><div><span>RESPONSIBLE OPERATOR</span><p>To be supplied</p></div><div><span>POSTAL ADDRESS</span><p>To be supplied</p></div><div><span>CONTACT EMAIL</span><p>To be supplied</p></div></div>
