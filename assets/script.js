@@ -5,6 +5,8 @@ const banner = document.getElementById("liveBanner"),
   play = document.getElementById("playButton"),
   next = document.getElementById("nextButton"),
   message = document.getElementById("playerMessage");
+const offlineRecording = document.getElementById("offlineRecording");
+if (next && offlineRecording) offlineRecording.append(next);
 let stream = "",
   stationState = "unknown",
   stationTitle = "",
@@ -318,6 +320,7 @@ async function nextRecording() {
     link.target = "_blank";
     link.rel = "noopener";
     panel.append(label, heading, link);
+    panel.append(next);
     panel.hidden = false;
     audio.src = track.audio_url;
     message.textContent = "Now playing a shuffled archive recording";
