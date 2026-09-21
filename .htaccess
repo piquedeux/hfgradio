@@ -1,2 +1,13 @@
 Options -Indexes
-DirectoryIndex index.html
+DirectoryIndex index.php
+RewriteEngine On
+RewriteBase /
+RewriteRule ^snippets(?:/|$) - [F,L]
+RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(?:assets|material)/.*\.(?:php|phtml|phar)$ - [F,L,NC]
+# Stop immediately for the entry point and existing public files.
+RewriteRule ^index\.php$ - [END]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [END]
+# An absolute URL path also works on hosts using an aliased document root.
+RewriteRule ^ /index.php [END,QSA]

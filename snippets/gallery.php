@@ -1,0 +1,1 @@
+<section class="page-title"><span>IMAGE ARCHIVE</span><h1>LIVE IN REAL LIFE</h1></section><p id="galleryStatus" class="load-status" role="status">Loading photographs…</p><div id="gallery" class="gallery"></div>

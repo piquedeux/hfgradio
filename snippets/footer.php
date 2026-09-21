@@ -1,0 +1,1 @@
+<footer><span>OFFENBACH AM MAIN</span><a href="https://instagram.com/hfgradio">INSTAGRAM</a><a href="/colophon/">COLOPHON</a><a href="/imprint/">IMPRINT</a><button id="toggleDotsBtn" type="button" aria-pressed="false">SHOW DOTS</button></footer>
