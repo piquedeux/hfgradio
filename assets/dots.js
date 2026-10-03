@@ -177,14 +177,14 @@ const toggleBtn = document.getElementById('toggleDotsBtn');
 // Start with dots hidden; show them on first burger click
 let dotsVisible = false;
 canvas.style.display = 'none';
-toggleBtn.title = 'add dots';
+toggleBtn.title = copy("footer.dots.add", "add dots");
 
 toggleBtn.addEventListener('click', () => {
     dotsVisible = !dotsVisible;
     document.body.classList.toggle('dots-visible', dotsVisible);
     document.dispatchEvent(new Event('dots-change'));
     canvas.style.display = dotsVisible ? 'block' : 'none';
-    toggleBtn.title = dotsVisible ? 'remove dots' : 'add dots';
-    toggleBtn.textContent = dotsVisible ? 'HIDE DOTS' : 'SHOW DOTS';
+    toggleBtn.title = dotsVisible ? copy("footer.dots.remove", "remove dots") : copy("footer.dots.add", "add dots");
+    toggleBtn.textContent = dotsVisible ? copy("footer.dots.hide", "HIDE DOTS") : copy("footer.dots.show", "SHOW DOTS");
     toggleBtn.setAttribute('aria-pressed', String(dotsVisible));
 });

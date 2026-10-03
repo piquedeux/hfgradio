@@ -2,7 +2,7 @@ Options -Indexes
 DirectoryIndex index.php
 RewriteEngine On
 RewriteBase /
-RewriteRule ^snippets(?:/|$) - [F,L]
+RewriteRule ^(?:snippets|includes|tests)(?:/|$) - [F,L]
 RewriteRule (^|/)\. - [F,L]
 RewriteRule ^(?:assets|material)/.*\.(?:php|phtml|phar)$ - [F,L,NC]
 # Stop immediately for the entry point and existing public files.

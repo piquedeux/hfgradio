@@ -11,10 +11,10 @@
         data.entries.length === 0;
       target.replaceChildren();
       status.textContent = data.stale
-        ? "Showing saved links."
+        ? copy("links.stale", "Showing saved links.")
         : data.entries.length
           ? ""
-          : "Links will appear here soon.";
+          : copy("links.empty", "Links will appear here soon.");
       for (const entry of data.entries) {
         const article = document.createElement("article");
         article.className = "press-entry";
@@ -29,7 +29,7 @@
         target.append(article);
       }
     } catch {
-      status.textContent = "Links could not load. Please try again later.";
+      status.textContent = copy("links.error", "Links could not load. Please try again later.");
     }
   }
   loadPress();

@@ -1,19 +1,14 @@
 <?php
 // Single request entry point; serve only public asset files directly in the development server.
 $path=rawurldecode(parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)??'/');
-if(str_contains($path,'..')||preg_match('~/(?:\.|snippets(?:/|$))~',$path)){http_response_code(404);exit;}
+if(str_contains($path,'..')||preg_match('~/(?:\.|(?:snippets|includes|tests)(?:/|$))~',$path)){http_response_code(404);exit;}
 if(preg_match('~^/(assets|material)/~',$path)){
  if(preg_match('/\.(php|phtml|phar|htaccess)$/i',$path)){http_response_code(404);exit;}
  if(is_file(__DIR__.$path)&&PHP_SAPI==='cli-server')return false;
  http_response_code(404);exit;
 }
 
-function content_values(){
- $file=__DIR__.'/content.txt';$values=[];
- if(!is_file($file))return $values;
- foreach(file($file,FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES) as $line){$line=trim($line);if($line===''||$line[0]==='#')continue;$separator=strpos($line,'=');if($separator===false)continue;$key=trim(substr($line,0,$separator));$value=trim(substr($line,$separator+1));if($key!=='')$values[$key]=str_replace('\\n',"\n",$value);}
- return $values;
-}
+require __DIR__.'/includes/content.php';
 $content=content_values();
 function content_text($key,$fallback=''){global $content;return htmlspecialchars($content[$key]??$fallback,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
 function content_value($key,$fallback=''){global $content;return $content[$key]??$fallback;}
@@ -21,11 +16,11 @@ function content_url($key,$fallback=''){return htmlspecialchars(content_value($k
 function content_lines($key,$fallback=''){return nl2br(content_text($key,$fallback),false);}
 
 // Public folder adapter. No account credentials; keep last good listing if Google is unavailable.
-function drive_cache_dir(){ $dir=sys_get_temp_dir().'/hfg-drive-'.hash('sha256',__DIR__);if(!is_dir($dir))mkdir($dir,0700,true);return $dir; }
+function drive_cache_dir(){ $dir=sys_get_temp_dir().'/hfg-drive-v2-'.hash('sha256',__DIR__);if(!is_dir($dir))mkdir($dir,0700,true);return $dir; }
 function drive_listing(){
  $cache=drive_cache_dir().'/listing.json';
  if(is_file($cache)&&time()-filemtime($cache)<300)return json_decode(file_get_contents($cache),true)?:[];
- $ch=curl_init('https://drive.google.com/embeddedfolderview?id=1QO0CYPm5Px3qDIRHCsnimjfNS9DnGYLG');curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>8]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
+ $ch=curl_init('https://drive.google.com/embeddedfolderview?id=1EI6pcB3DhXf3rTYUt1CUVuuyTe-hYZ0-');curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>8]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
  if($code!==200||!is_string($body)||!str_contains($body,'flip-entries'))return is_file($cache)?json_decode(file_get_contents($cache),true):[];
  $dom=new DOMDocument();@$dom->loadHTML($body,LIBXML_NONET);$xp=new DOMXPath($dom);$rows=[];
  foreach($xp->query('//div[contains(concat(" ",normalize-space(@class)," ")," flip-entry ")]') as $entry){
@@ -54,11 +49,11 @@ $api=$_GET['api']??null;
 if(preg_match('~^/api/([a-z-]+)\.php$~',$path,$m))$api=$m[1];
 if($api!==null){switch($api){
 case 'archive':
-
+require_once __DIR__.'/includes/archive-overrides.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 $cache = sys_get_temp_dir() . '/hfgradio-archive-v4-' . hash('sha256', __DIR__) . '.json';
-if (is_file($cache) && time()-filemtime($cache)<300) {readfile($cache);exit;}
+if (is_file($cache) && time()-filemtime($cache)<300) {echo archive_response(json_decode(file_get_contents($cache),true));exit;}
 $base='https://feeds.soundcloud.com/users/soundcloud:users:1478398819/sounds.rss';
 $url=$base;$posts=[];$seen=[];
 try {
@@ -90,9 +85,9 @@ try {
  if($url)throw new RuntimeException('Feed pagination limit');
  $posts=array_values($posts);usort($posts,fn($a,$b)=>strcmp($b['created_at'],$a['created_at']));
  $json=json_encode(['posts'=>$posts,'stale'=>false],JSON_INVALID_UTF8_SUBSTITUTE|JSON_UNESCAPED_SLASHES);
- $tmp=tempnam(sys_get_temp_dir(),'hfg-feed-');if($tmp!==false){file_put_contents($tmp,$json);rename($tmp,$cache);}echo $json;
+ $tmp=tempnam(sys_get_temp_dir(),'hfg-feed-');if($tmp!==false){file_put_contents($tmp,$json);rename($tmp,$cache);}echo archive_response(['posts'=>$posts,'stale'=>false]);
 } catch(Throwable $e){
- if(is_file($cache)){$data=json_decode(file_get_contents($cache),true);$data['stale']=true;echo json_encode($data);}else{http_response_code(502);echo json_encode(['error'=>'SoundCloud unavailable']);}
+ if(is_file($cache)){$data=json_decode(file_get_contents($cache),true);$data['stale']=true;echo archive_response($data);}else{http_response_code(502);echo json_encode(['error'=>'SoundCloud unavailable']);}
 }
 
 exit;
@@ -145,6 +140,24 @@ if ($code !== 200 || !is_array($data) || !isset($data['station'])) { http_respon
 echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
 
 exit;
+case 'airtime':
+header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
+$ch=curl_init('https://hfgradio.airtime.pro/api/live-info');
+curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_TIMEOUT=>5]);
+$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
+$data=is_string($body)?json_decode($body,true):null;
+if($code!==200||!is_array($data)||!array_key_exists('current',$data)){http_response_code(503);echo json_encode(['live'=>false]);exit;}
+// Airtime keeps its Icecast mount connected even while off air. Match its
+// own widget: a null current item means there is no broadcast to select.
+$current=$data['current'];$live=is_array($current)&&!empty($current['type']);
+// Programme names belong to currentShow; current.name is the playing track.
+$showTitle='';
+foreach(($data['currentShow']??[]) as $show){
+ if(is_array($show)&&is_string($show['name']??null)&&trim($show['name'])!==''){$showTitle=trim($show['name']);break;}
+}
+$title=$live?$showTitle:'';
+echo json_encode(['live'=>$live,'stream'=>$live?'https://hfgradio.out.airtime.pro/hfgradio_b':'','title'=>$title],JSON_INVALID_UTF8_SUBSTITUTE|JSON_UNESCAPED_SLASHES);
+exit;
 case 'twitch':
 
 header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
@@ -163,9 +176,9 @@ case 'press':
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
-$cache=sys_get_temp_dir().'/hfg-press-'.hash('sha256',__DIR__).'.json';
+$cache=sys_get_temp_dir().'/hfg-press-v2-'.hash('sha256',__DIR__).'.json';
 if(is_file($cache)&&time()-filemtime($cache)<300){readfile($cache);exit;}
-$url='https://docs.google.com/spreadsheets/d/1U9-_YblzEsajYdhg-IKH8LD-iuUqL_SlZTNAK5lXJwE/gviz/tq?tqx=out:csv';
+$url='https://docs.google.com/spreadsheets/d/1WP-NAnzCT6TDl_fVinEdq6_EuczYo2FRweUzt509Zuw/gviz/tq?tqx=out:csv';
 $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>10]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
 if($code!==200||!is_string($body)||str_contains(strtolower($body),'<html')){if(is_file($cache)){$data=json_decode(file_get_contents($cache),true);$data['stale']=true;echo json_encode($data);}else{http_response_code(502);echo json_encode(['error'=>'Press feed unavailable']);}exit;}
 $fp=fopen('php://temp','r+');fwrite($fp,$body);rewind($fp);$entries=[];
@@ -177,6 +190,6 @@ default:http_response_code(404);echo json_encode(['error'=>'Not found']);exit;}}
 if($path==='/chat.html'||($_GET['view']??'')==='chat'){require __DIR__.'/snippets/chat.php';exit;}
 $routes=['/'=>'home','/archive/'=>'archive','/live-in-real-life/'=>'gallery','/links/'=>'links','/imprint/'=>'imprint','/colophon/'=>'colophon'];
 $route=$path==='/index.php'||trim($path,'/')===''?'/':'/'.trim($path,'/').'/';
-if(!isset($routes[$route])){http_response_code(404);echo 'Page not found';exit;}
+if(!isset($routes[$route])){http_response_code(404);echo content_text('site.notfound','Page not found');exit;}
 $page=$routes[$route];$titles=['home'=>content_value('page.home.title','Radio'),'archive'=>content_value('page.archive.title','Archive'),'gallery'=>content_value('page.gallery.title','Live in real life'),'links'=>content_value('page.links.title','Links'),'imprint'=>content_value('imprint.title','Imprint'),'colophon'=>content_value('colophon.title','Colophon')];$font_url=content_url('site.font.url','/assets/fonts/arial.ttf');$font_format=content_text('site.font.format','truetype');$favicon_url=content_url('site.favicon.url','/material/logofinalb.png');
-?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($titles[$page],ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?> — <?= content_text('site.name','HFG RADIO') ?></title><meta name="description" content="<?= content_text('site.description','HFG Radio. Independent radio from Offenbach am Main.') ?>"><link rel="icon" href="<?= $favicon_url ?>"><style>@font-face{font-family:Arial;src:url('<?= $font_url ?>') format('<?= $font_format ?>');font-weight:400;font-display:swap}</style><link rel="stylesheet" href="/assets/styles.css"><script defer src="/assets/script.js"></script><script defer src="/assets/archive.js"></script><script defer src="/assets/gallery.js"></script><script defer src="/assets/press.js"></script><script defer src="/assets/navigation.js"></script></head><body class="<?= $page==='home'?'home':'subpage '.$page.'-page' ?>"><a class="skip" href="#main">Skip to content</a><?php require __DIR__.'/snippets/header.php'; require __DIR__.'/snippets/player.php'; ?><main id="main"><?php foreach($titles as $key=>$title): ?><div data-page="<?= $key ?>" <?= $page!==$key?'hidden':'' ?>><?php require __DIR__.'/snippets/'.$key.'.php'; ?></div><?php endforeach; ?></main><?php require __DIR__.'/snippets/footer.php'; ?><canvas id="dotPatternCanvas" aria-hidden="true"></canvas><script src="/assets/dots.js"></script></body></html>
+?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($titles[$page],ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?> — <?= content_text('site.name','HFG RADIO') ?></title><meta name="description" content="<?= content_text('site.description','HFG Radio. Independent radio from Offenbach am Main.') ?>"><link rel="icon" href="<?= $favicon_url ?>"><style>@font-face{font-family:Arial;src:url('<?= $font_url ?>') format('<?= $font_format ?>');font-weight:400;font-display:swap}</style><link rel="stylesheet" href="/assets/styles.css?v=<?= filemtime(__DIR__.'/assets/styles.css') ?>"><script id="siteContent" type="application/json"><?= json_encode($content,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_INVALID_UTF8_SUBSTITUTE) ?></script><script defer src="/assets/content.js?v=<?= filemtime(__DIR__.'/assets/content.js') ?>"></script><script defer src="/assets/script.js?v=<?= filemtime(__DIR__.'/assets/script.js') ?>"></script><script defer src="/assets/archive.js?v=<?= filemtime(__DIR__.'/assets/archive.js') ?>"></script><script defer src="/assets/gallery.js?v=<?= filemtime(__DIR__."/assets/gallery.js") ?>"></script><script defer src="/assets/press.js?v=<?= filemtime(__DIR__."/assets/press.js") ?>"></script><script defer src="/assets/navigation.js?v=<?= filemtime(__DIR__."/assets/navigation.js") ?>"></script><script defer src="/assets/search.js?v=<?= filemtime(__DIR__ . "/assets/search.js") ?>"></script></head><body class="<?= $page==='home'?'home':'subpage '.$page.'-page' ?>"><a class="skip" href="#main"><?= content_text('site.skip','Skip to content') ?></a><?php require __DIR__.'/snippets/header.php'; require __DIR__.'/snippets/search.php'; require __DIR__.'/snippets/player.php'; ?><main id="main"><?php foreach($titles as $key=>$title): ?><div data-page="<?= $key ?>" <?= $page!==$key?'hidden':'' ?>><?php require __DIR__.'/snippets/'.$key.'.php'; ?></div><?php endforeach; ?></main><?php require __DIR__.'/snippets/footer.php'; ?><canvas id="dotPatternCanvas" aria-hidden="true"></canvas><script defer src="/assets/dots.js?v=<?= filemtime(__DIR__."/assets/dots.js") ?>"></script></body></html>
