@@ -67,7 +67,6 @@ button {
     gap: 6vw
 }
 
-.top-grid a:hover,
 .top-grid a[aria-current=page] {
     text-decoration: underline;
     text-underline-offset: 3px
@@ -164,11 +163,9 @@ main {
     cursor: pointer
 }
 
-.dial-action:hover,
 .dial-action:focus-visible {
-    background: #000;
-    color: #fff;
-    outline: 0
+    outline: 2px solid currentColor;
+    outline-offset: 4px
 }
 
 .action-play {
@@ -312,9 +309,7 @@ main {
     text-align: right
 }
 
-.info-table a:hover {
-    text-decoration: underline
-}
+
 
 .page-title {
     display: grid;
@@ -413,9 +408,7 @@ main {
     grid-area: source
 }
 
-.post>a:hover {
-    text-decoration: underline
-}
+
 
 .post audio {
     display: none
@@ -895,9 +888,7 @@ footer button {
     color: black
 }
 
-footer a:hover {
-    text-decoration: underline
-}
+
 
 .page-title {
     padding: 30px 24px
@@ -1314,9 +1305,8 @@ footer a:hover {
     object-fit: cover
 }
 
-.archive-marquee:hover .archive-marquee-track,
-.archive-marquee:focus-within .archive-marquee-track {
-    animation-play-state: paused
+@media(hover:hover) and (pointer:fine){
+.archive-marquee:hover .archive-marquee-track,.archive-marquee:focus-within .archive-marquee-track{animation-play-state:paused}
 }
 
 @keyframes archive-drift {
@@ -1524,10 +1514,9 @@ footer a:hover {
     color: #00ff00
 }
 
-#chatButton:hover,
 #chatButton:focus-visible {
-    color: #fff;
-    background: #00ff00
+    outline: 2px solid currentColor;
+    outline-offset: 4px
 }
 
 #chatButton[aria-expanded=true] {
@@ -1663,107 +1652,158 @@ footer a:hover {
     }
 }
 
-/* Keep Twitch rendered beneath the weather cover; SHOW DOTS reveals it. */
-.twitch-circle {
-    position: absolute;
-    inset: 27%;
-    border-radius: 50%;
-    overflow: hidden;
-    z-index: 3;
-    background: #fff
+
+/* Twitch remains below all page content; no cover, clipping or visibility toggles. */
+.twitch-dock{width:min(100%,640px);margin:36px auto;padding:0 0 24px}
+.twitch-dock>p{font-size:13px;margin:0 12px 12px}
+#twitchDock .twitch-audio-engine{position:relative;inset:auto;width:100%;height:360px;min-height:300px;opacity:1;z-index:auto;pointer-events:auto;overflow:visible;transform:none}
+#twitchDock iframe{display:block;width:100%;height:100%;border:0}
+.offline-recording{position:relative;clear:both;display:block;width:min(900px,94%);margin:24px auto;padding:20px;background:#eee}
+.offline-recording .action-next,.offline-recording #returnLive{position:static;display:inline-block;width:auto;height:auto;margin:16px 20px 0 0;padding:6px 0;border:0;background:none;color:#000;font:700 15px Arial;text-decoration:underline;cursor:pointer}
+
+.offline-recording>a{display:inline-block;margin-right:20px}.offline-recording .action-next{margin-left:0}
+
+/* Only the compact audio controls remain at the top during inner-page scrolling. */
+.subpage .player-shell{position:sticky;top:0;z-index:30}
+.subpage .table-head{position:static}
+@media(max-width:700px),(hover:none){
+ .live-banner .marquee{animation:live-scroll 12s linear infinite;animation-play-state:running;will-change:transform}
+ .archive-marquee .archive-marquee-track{animation:archive-drift 70s linear infinite;animation-play-state:running;will-change:transform}
 }
 
-.twitch-circle .twitch-audio-engine {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    bottom: auto;
-    transform: translate(-50%, -50%);
-    width: max(400px, 100%);
-    height: max(300px, 100%);
-    opacity: 1;
-    z-index: 0;
-    pointer-events: auto
+/* Persistent recording controls, with a home-only expanded card. */
+.subpage #offlineRecording { display:none !important; }
+.station-caption .action-next { position:static; width:auto; height:auto; padding:6px 0; margin:4px 0; background:none; border:0; font:700 16px Arial; text-decoration:underline; cursor:pointer; }
+#currentShowTitle a { position:relative; color:inherit; }
+.current-recording-preview { display:none; position:absolute; right:0; top:100%; width:160px; height:160px; object-fit:cover; z-index:40; }
+@media(hover:hover) and (pointer:fine) { .subpage #currentShowTitle a:hover .current-recording-preview {display:block;} }
+.subpage #currentShowTitle a:focus-visible .current-recording-preview {display:block;}
+.live-banner[data-state="archive"] .marquee span { width:auto; min-width:0; padding-inline:3vw; }
+.post[id] {scroll-margin-top:140px;}
+
+/* Twitch stays mounted and visible on every page. */
+.twitch-dock {width:100%;max-width:none;margin:36px 0 0;padding:0;background:#fff;}
+#twitchDock {width:100%;background:#fff;}
+#twitchDock .twitch-audio-engine {height:max(300px,56.25vw);background:#fff;}
+
+#headerListenLive {border:0;background:none;color:inherit;font:700 16px Arial;text-decoration:underline;padding:6px 0;cursor:pointer;}
+.home #headerListenLive {display:none;}
+.twitch-dock.in-circle {position:fixed;margin:0;padding:0;z-index:20;border-radius:50%;overflow:hidden;clip-path:circle(50%);background:#fff;}
+.twitch-dock.in-circle #twitchDock .twitch-audio-engine {position:absolute;left:50%;top:50%;width:max(900px,160vw);height:max(600px,90vw);min-height:600px;transform:translate(-50%,-50%);}
+.twitch-in-circle #weatherPlay {visibility:hidden;}
+.twitch-play-hint {position:absolute;left:52%;top:32%;transform:translateY(-100%);z-index:25;background:#39ff14;color:#000;border-radius:22px;padding:12px 18px;font:700 clamp(12px,2vw,19px) Arial;white-space:nowrap;pointer-events:none;}
+.twitch-play-hint:after {content:"";position:absolute;left:10px;top:100%;border-left:0 solid transparent;border-right:20px solid transparent;border-top:28px solid #39ff14;}
+
+/* Twitch playback belongs to the native embed; archive controls remain active. */
+#playButton:disabled {color:#aaa;opacity:.55;cursor:default;pointer-events:none;}
+.twitch-play-hint {left:50%;top:29%;transform:translate(-50%,-100%);border-radius:9px;padding:8px 12px;font:700 clamp(11px,1.5vw,15px) Arial;}
+.twitch-play-hint:after {left:50%;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-top:12px solid #39ff14;}
+
+/* Native document scrolling keeps the circular embed aligned without scroll handlers. */
+.twitch-dock {position:relative;}
+.twitch-dock.in-circle {position:absolute;}
+#twitchWeatherCover {position:absolute;inset:0;z-index:2;width:100%;height:100%;margin:0;padding:0;border:0;background:#fff;cursor:pointer;}
+#twitchWeatherCover[hidden] {display:none;}
+#twitchWeatherCover img {display:block;width:100%;height:100%;object-fit:cover;}
+
+/* The real Airtime embed is a fallback only; normal playback uses our dial. */
+.twitch-dock[hidden] {display:none !important;}
+.airtime-widget .dial {background:none;}
+.airtime-widget .dial-fields,
+.airtime-widget #playButton,
+.airtime-widget #muteButton,
+.airtime-widget .dial-volume,
+.airtime-widget #weatherPlay {visibility:hidden;}
+#airtimeWidget {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;border-radius:50%;overflow:hidden;z-index:20;}
+#airtimeWidget iframe {position:absolute;left:-75px;top:-57px;width:350px;height:396px;max-width:none;border:0;}
+.airtime-widget #twitchPlayHint {top:calc(50% - 110px);}
+.airtime-widget #chatButton {display:flex;visibility:visible;}
+.subpage.airtime-widget .player-shell .dial {display:block;min-height:310px;}
+.subpage.airtime-widget #chatButton {position:absolute;top:calc(50% + 115px);left:50%;transform:translateX(-50%);}
+
+/* Stretch only lettering, preserving each control's box and any artwork. */
+a .hover-label, button .hover-label {
+    display:inline-block;
+    font:inherit;
+    letter-spacing:inherit;
+    transform-origin:center;
+    transition:transform 180ms ease;
+    pointer-events:none;
+}
+@media (hover:hover) and (pointer:fine) {
+    a:hover .hover-label, button:enabled:hover .hover-label {transform:scaleX(1.5);}
+}
+a:focus-visible .hover-label, button:enabled:focus-visible .hover-label {transform:scaleX(1.5);}
+@media (prefers-reduced-motion:reduce) {
+    a .hover-label, button .hover-label {transition:none;}
 }
 
-.twitch-audio-engine iframe {
-    width: 100%;
-    height: 100%;
-    border: 0
-}
-
-.dial-center {
-    z-index: 4
-}
-
-.home.twitch-revealed .dial-center {
-    opacity: 0;
-    pointer-events: none
-}
-
-.subpage .twitch-circle {
-    position: fixed;
-    inset: auto auto 0 0;
-    width: 400px;
-    height: 300px;
-    z-index: -1;
-    border-radius: 0;
-    pointer-events: none
-}
-
-.subpage .twitch-circle:after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: #fff;
-    z-index: 1
-}
-
+/* Artwork is a scrollable, non-clickable strip on mouse and touch devices. */
+.archive-marquee {overflow-x:auto;overflow-y:hidden;cursor:grab;user-select:none;touch-action:pan-x pan-y;scrollbar-width:none;}
+.archive-marquee::-webkit-scrollbar {display:none;}
+.archive-marquee.is-dragging {cursor:grabbing;}
+.archive-marquee:focus-visible {outline:2px solid currentColor;outline-offset:3px;}
+.archive-marquee .archive-marquee-track {animation:none;transform:none;will-change:auto;}
+.archive-marquee-track > img {display:block;flex:0 0 130px;width:130px;height:130px;object-fit:cover;user-select:none;-webkit-user-drag:none;}
+.live-banner[data-state="archive"] .marquee > span {display:flex;align-items:center;gap:12px;height:100%;padding:0 3vw 0 0;}
+.live-banner[data-state="archive"] .marquee img {display:block;flex:none;height:100%;width:auto;aspect-ratio:1;object-fit:cover;}
+.live-banner[data-state="archive"] .marquee {animation-duration:30s;}
 @media(max-width:700px) {
-    .live-banner .marquee {
-        animation: live-scroll 12s linear infinite !important
-    }
-
-    .archive-marquee-track {
-        animation: archive-drift 70s linear infinite !important
-    }
+    .archive-marquee-track > img {flex-basis:90px;width:90px;height:90px;}
 }
 
-.twitch-circle {
-    opacity: 0;
-    pointer-events: none
+/* Inline-block labels need their own underline for persistent active states. */
+a[aria-current]:not([aria-current="false"]) .hover-label,
+button[aria-pressed="true"] .hover-label,
+button[aria-expanded="true"] .hover-label,
+[role="tab"][aria-selected="true"] .hover-label {
+    text-decoration:underline;
+    text-underline-offset:3px;
 }
 
-.home.twitch-revealed .dial-center {
-    opacity: 1;
-    pointer-events: auto
+/* Keep the primary PLAY label underlined before playback starts. */
+#playButton[aria-pressed="false"],
+#playButton[aria-pressed="false"] .hover-label {
+    text-decoration:underline;
+    text-underline-offset:3px;
 }
 
-.twitch-audio-engine iframe {
-    pointer-events: none
+/* The email is SVG text, so stretch its glyphs within the existing full-width link. */
+#cooperationEmail text {
+    transform-box:view-box;
+    transform-origin:50% 50%;
+    transform:scaleX(.666667);
+    transition:transform 180ms ease;
+}
+@media(hover:hover) and (pointer:fine) {
+    #cooperationEmail:hover text {transform:scaleX(1);}
+}
+#cooperationEmail:focus-visible text {transform:scaleX(1);}
+@media(prefers-reduced-motion:reduce) {
+    #cooperationEmail text {transition:none;}
 }
 
-.action-next {
-    top: 21%;
-    left: 35%;
-    width: 30%;
-    height: 8%;
-    font-size: clamp(12px, 2vw, 20px)
-}
+/* Brief touch feedback, including the SVG email lettering. */
+a.tap-feedback .hover-label, button.tap-feedback .hover-label {transform:scaleX(1.5);}
+#cooperationEmail.tap-feedback text {transform:scaleX(1);}
 
-.offline-recording .action-next {
-    position: static;
-    display: block;
-    width: auto;
-    height: auto;
-    margin-top: 16px;
-    padding: 6px 0;
-    border: 0;
-    background: transparent;
-    color: #000;
-    font-family: Arial, sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    text-decoration: underline;
-    cursor: pointer
+/* Invert the entire rendered page while muted, including its background. */
+html.radio-muted {filter:invert(1);}
+#weatherPlay {cursor:default;pointer-events:none;}
+#openSearch {font:inherit;border:0;padding:0;background:none;cursor:pointer;}
+#siteSearch {width:min(760px,calc(100vw - 32px));max-height:85dvh;padding:24px;border:1px solid #000;background:#fff;color:#000;}
+#siteSearch::backdrop {background:rgb(0 0 0 / .35);}
+.search-heading {display:flex;align-items:center;justify-content:space-between;gap:24px;}
+.search-heading h2 {margin:0;font:inherit;}
+.search-heading button {border:0;background:none;cursor:pointer;}
+.search-label {display:block;margin-top:24px;}
+#searchQuery {display:block;width:100%;padding:12px 0;border:0;border-bottom:1px solid currentColor;border-radius:0;background:transparent;color:inherit;font:inherit;}
+#searchStatus {font-size:14px;}
+#searchResults {list-style:none;padding:0;}
+#searchResults li {border-top:1px solid #ddd;}
+#searchResults a {display:block;padding:14px 0;}
+#searchResults .hover-label {transform-origin:left;max-width:100%;overflow-wrap:anywhere;}
+@media(max-width:700px) {
+    .top-grid nav {flex-wrap:wrap;gap:8px 18px;}
+    #siteSearch {padding:16px;}
 }
