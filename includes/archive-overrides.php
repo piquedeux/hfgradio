@@ -1,6 +1,6 @@
 <?php
 // Public editorial sheet. SoundCloud remains authoritative for playback and artwork.
-const HFG_ARCHIVE_SHEET = '1fFzz0QNaiqATgRfLNZqbIwYbj4C3eAHTxkDaztHpmgo';
+const HFG_ARCHIVE_SHEET = 'MWZGenowUU5haXFBVGdSZkxOWnFiSXdZYmo0QzNlQUhUeGtEYXp0SHBtZ28=';
 
 function archive_overrides_parse(string $csv): ?array {
  if(strlen($csv)>2000000 || str_contains(strtolower(substr($csv,0,500)),'<html'))return null;
@@ -27,11 +27,12 @@ function archive_overrides_parse(string $csv): ?array {
 }
 
 function archive_overrides(): array {
- $cache=sys_get_temp_dir().'/hfg-archive-overrides-'.hash('sha256',__DIR__.HFG_ARCHIVE_SHEET).'.json';
+ $sheet=base64_decode(HFG_ARCHIVE_SHEET,true);
+ $cache=sys_get_temp_dir().'/hfg-archive-overrides-'.hash('sha256',__DIR__.$sheet).'.json';
  $saved=is_file($cache)?json_decode(file_get_contents($cache),true):[];
  if(!is_array($saved))$saved=[];
  if(is_file($cache)&&time()-filemtime($cache)<60)return $saved;
- $ch=curl_init('https://docs.google.com/spreadsheets/d/'.HFG_ARCHIVE_SHEET.'/gviz/tq?tqx=out:csv&sheet=Aufnahmen');
+ $ch=curl_init('https://docs.google.com/spreadsheets/d/'.$sheet.'/gviz/tq?tqx=out:csv&sheet=Aufnahmen');
  curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_MAXREDIRS=>3,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_REDIR_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>8]);
  $csv=curl_exec($ch);$status=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
  $rows=$status===200&&is_string($csv)?archive_overrides_parse($csv):null;
