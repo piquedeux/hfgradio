@@ -20,7 +20,7 @@ function drive_cache_dir(){ $dir=sys_get_temp_dir().'/hfg-drive-v2-'.hash('sha25
 function drive_listing(){
  $cache=drive_cache_dir().'/listing.json';
  if(is_file($cache)&&time()-filemtime($cache)<300)return json_decode(file_get_contents($cache),true)?:[];
- $ch=curl_init('https://drive.google.com/embeddedfolderview?id=1EI6pcB3DhXf3rTYUt1CUVuuyTe-hYZ0-');curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>8]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
+ $ch=curl_init('https://drive.google.com/embeddedfolderview?id='.base64_decode('MUVJNnBjQjNEaFhmM3JUWVV0MUNVVnV1eVRlLWhZWjAt'));curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>8]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
  if($code!==200||!is_string($body)||!str_contains($body,'flip-entries'))return is_file($cache)?json_decode(file_get_contents($cache),true):[];
  $dom=new DOMDocument();@$dom->loadHTML($body,LIBXML_NONET);$xp=new DOMXPath($dom);$rows=[];
  foreach($xp->query('//div[contains(concat(" ",normalize-space(@class)," ")," flip-entry ")]') as $entry){
@@ -178,7 +178,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 $cache=sys_get_temp_dir().'/hfg-press-v2-'.hash('sha256',__DIR__).'.json';
 if(is_file($cache)&&time()-filemtime($cache)<300){readfile($cache);exit;}
-$url='https://docs.google.com/spreadsheets/d/1WP-NAnzCT6TDl_fVinEdq6_EuczYo2FRweUzt509Zuw/gviz/tq?tqx=out:csv';
+$url='https://docs.google.com/spreadsheets/d/'.base64_decode('MVdQLU5BbnpDVDZURGxfZlZpbkVkcTZfRXVjellvMkZSd2VVenQ1MDladXc=').'/gviz/tq?tqx=out:csv';
 $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>10]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
 if($code!==200||!is_string($body)||str_contains(strtolower($body),'<html')){if(is_file($cache)){$data=json_decode(file_get_contents($cache),true);$data['stale']=true;echo json_encode($data);}else{http_response_code(502);echo json_encode(['error'=>'Press feed unavailable']);}exit;}
 $fp=fopen('php://temp','r+');fwrite($fp,$body);rewind($fp);$entries=[];

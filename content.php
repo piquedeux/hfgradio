@@ -1,5 +1,5 @@
 <?php
-const HFG_CONTENT_SHEET = '1WoecWeRnfeLaWQV3R4mGwCIy6drd9wm5YGvq-wKVnQk';
+const HFG_CONTENT_SHEET = 'MVdvZWNXZVJuZmVMYVdRVjNSNG1Hd0NJeTZkcmQ5d201WUd2cS13S1ZuUWs=';
 function content_editorial_fields() {
  return [
   "Name des Radios" => "site.name",
@@ -66,7 +66,8 @@ function content_atomic_write($file,$text) {
 function content_values() {
  $file=dirname(__DIR__).'/content.txt';
  $values=is_file($file)?content_parse_text(file_get_contents($file)):[];
- $cache=sys_get_temp_dir().'/hfg-content-editorial-v2-'.hash('sha256',__DIR__.HFG_CONTENT_SHEET).'.json';
+ $sheet=base64_decode(HFG_CONTENT_SHEET,true);
+ $cache=sys_get_temp_dir().'/hfg-content-editorial-v2-'.hash('sha256',__DIR__.$sheet).'.json';
  $saved=is_file($cache)?json_decode(file_get_contents($cache),true):null;
  if(is_array($saved))$values=array_replace($values,content_editorial_only($saved['values']??[]));
  if(is_array($saved)&&time()-($saved['checked']??0)<60)return content_contact_links($values);
@@ -74,7 +75,7 @@ function content_values() {
  $lock=fopen($cache.'.lock','c');
  if(!$lock||!flock($lock,LOCK_EX|LOCK_NB)){if($lock)fclose($lock);return content_contact_links($values);}
  if(function_exists('curl_init')){
-  $ch=curl_init('https://docs.google.com/spreadsheets/d/'.HFG_CONTENT_SHEET.'/gviz/tq?tqx=out:csv&sheet=Tabellenblatt1');
+  $ch=curl_init('https://docs.google.com/spreadsheets/d/'.$sheet.'/gviz/tq?tqx=out:csv&sheet=Tabellenblatt1');
   curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_MAXREDIRS=>3,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_REDIR_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_TIMEOUT=>5]);
   $body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
   $remote=$code===200?content_parse_csv($body):[];
