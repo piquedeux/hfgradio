@@ -72,33 +72,6 @@ button {
     text-underline-offset: 3px
 }
 
-.broadcast-bar {
-    min-height: 38px;
-    background: #000;
-    color: #fff;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    padding: 3px 6px;
-    gap: 12px
-}
-
-.broadcast-bar a {
-    text-align: right
-}
-
-.broadcast-bar #liveBanner[data-state=live] {
-    color: #ff3b30
-}
-
-.broadcast-bar #liveBanner[data-state=autodj] {
-    color: #00ff45
-}
-
-.broadcast-location {
-    text-align: center
-}
-
 .clock-section {
     height: clamp(76px, 10vw, 160px);
     background: #d1d3d4;
@@ -122,194 +95,6 @@ button {
 main {
     min-height: 65vh
 }
-
-.dial-section {
-    padding: clamp(20px, 3vw, 46px) 0 0
-}
-
-.dial {
-    position: relative;
-    width: min(80vw, 820px);
-    aspect-ratio: 1;
-    margin: auto;
-    border-radius: 50%;
-    background: repeating-radial-gradient(circle, #fff 0 12.4%, #d1d3d4 12.5% 12.8%, #fff 12.9% 24.8%, #000 24.9% 25.3%, #fff 25.4% 37.2%, #d1d3d4 37.3% 37.7%, #fff 37.8% 50%);
-    overflow: hidden;
-    filter: drop-shadow(0 12px 12px #0003)
-}
-
-.dial-fields {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: conic-gradient(from -45deg, transparent 0 24.5%, #d1d3d4 24.5% 25%, transparent 25% 49.5%, #000 49.5% 50%, transparent 50% 74.5%, #d1d3d4 74.5% 75%, transparent 75% 99.5%, #000 99.5%);
-    pointer-events: none
-}
-
-.dial-action {
-    position: absolute;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    border: 0;
-    background: #fff;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    font-stretch: normal;
-    font-size: clamp(24px, 4vw, 58px);
-    line-height: .88;
-    cursor: pointer
-}
-
-.dial-action:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 4px
-}
-
-.action-play {
-    width: 31%;
-    height: 16%;
-    left: 34.5%;
-    top: 2%;
-    border-radius: 50%
-}
-
-.action-archive {
-    width: 25%;
-    height: 18%;
-    right: 1%;
-    top: 41%;
-    border-radius: 50%
-}
-
-.action-gallery {
-    width: 31%;
-    height: 18%;
-    left: 34.5%;
-    bottom: 2%;
-    border-radius: 50%
-}
-
-.action-chat {
-    width: 25%;
-    height: 18%;
-    left: 1%;
-    top: 41%;
-    border-radius: 50%
-}
-
-.dial-center {
-    position: absolute;
-    z-index: 3;
-    inset: 25%;
-    border-radius: 50%;
-    background: #fff;
-    overflow: hidden;
-    box-shadow: 0 0 0 8px #000
-}
-
-.logo-fill {
-    position: absolute;
-    inset: 8%;
-    background: #aaa url('https://opendata.dwd.de/weather/webcam/Offenbach-W/Offenbach-W_latest_full.jpg') center/cover;
-    mask: url('/material/logofinalb.png') center/contain no-repeat;
-    -webkit-mask: url('/material/logofinalb.png') center/contain no-repeat
-}
-
-.logo-img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    opacity: 0
-}
-
-.dial-track {
-    position: absolute;
-    z-index: 5;
-    left: 22%;
-    right: 22%;
-    top: calc(50% - 18px);
-    min-height: 36px;
-    background: #000;
-    color: #fff;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 18px;
-    align-items: center;
-    padding: 4px 9px;
-    font-size: clamp(12px, 1.5vw, 20px);
-    overflow: hidden
-}
-
-.dial-track strong {
-    font-weight: 400;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis
-}
-
-.player-table {
-    margin: 26px 0 0;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    background: #d1d3d4;
-    min-height: 42px;
-    align-items: center;
-    padding: 4px 6px
-}
-
-.player-table p {
-    margin: 0
-}
-
-.volume {
-    display: flex;
-    align-items: center;
-    gap: 14px
-}
-
-.volume button {
-    border: 0;
-    background: #000;
-    color: #fff;
-    padding: 3px 12px;
-    cursor: pointer
-}
-
-.volume input {
-    accent-color: #000;
-    width: 120px
-}
-
-.info-table {
-    margin-top: 40px
-}
-
-.info-table>div {
-    display: grid;
-    grid-template-columns: 170px 1fr auto;
-    gap: 12px;
-    min-height: 38px;
-    align-items: center;
-    padding: 5px 6px
-}
-
-.info-table>div:nth-child(odd) {
-    background: #d1d3d4
-}
-
-.info-table strong {
-    font-weight: 400
-}
-
-.info-table a {
-    text-align: right
-}
-
-
 
 .page-title {
     display: grid;
@@ -537,57 +322,12 @@ footer button {
         gap: 14px
     }
 
-    .broadcast-bar {
-        grid-template-columns: 1fr auto
-    }
-
-    .broadcast-location {
-        display: none
-    }
-
     .clock-section {
         height: 88px
     }
 
     .clock-section text {
         font-size: 78px
-    }
-
-    .dial {
-        width: 96vw
-    }
-
-    .dial-action {
-        font-size: clamp(18px, 7vw, 34px)
-    }
-
-    .dial-center {
-        box-shadow: 0 0 0 4px #000
-    }
-
-    .dial-track {
-        left: 15%;
-        right: 15%;
-        top: calc(50% - 14px);
-        min-height: 28px
-    }
-
-    .player-table {
-        grid-template-columns: 1fr
-    }
-
-    .volume {
-        justify-content: space-between;
-        padding-top: 5px
-    }
-
-    .info-table>div {
-        grid-template-columns: 72px 1fr
-    }
-
-    .info-table>div>:last-child {
-        grid-column: 2;
-        text-align: left
     }
 
     .page-title {
@@ -729,152 +469,6 @@ footer button {
     }
 }
 
-.dial-section {
-    padding-top: 12px
-}
-
-.dial {
-    width: min(88vw, 740px);
-    filter: none;
-    background: repeating-radial-gradient(circle, transparent 0 12%, #ddd 12.2% 12.5%, transparent 12.7% 24%);
-    overflow: visible
-}
-
-.dial-fields {
-    background: conic-gradient(from -45deg, #eee 0 25%, #fafafa 25% 50%, #eee 50% 75%, #fafafa 75%);
-    z-index: 0;
-    inset: 1%;
-    mask: radial-gradient(circle, transparent 35%, #000 35.3% 66%, transparent 66.3%)
-}
-
-.dial-center {
-    inset: 27%;
-    box-shadow: none;
-    background: transparent
-}
-
-.logo-fill {
-    inset: 0
-}
-
-.dial-action {
-    font-size: clamp(22px, 4.3vw, 48px);
-    background: transparent;
-    letter-spacing: -.05em
-}
-
-.action-play {
-    top: 7%;
-    height: 14%
-}
-
-.action-mute {
-    left: 2%;
-    top: 43%;
-    width: 25%;
-    height: 14%;
-    border-radius: 50%
-}
-
-.action-source {
-    bottom: 7%;
-    left: 29%;
-    width: 42%;
-    height: 16%;
-    border-radius: 50%;
-    flex-direction: column;
-    gap: 8px
-}
-
-.action-source span {
-    font: 12px Arial, sans-serif;
-    letter-spacing: -.02em
-}
-
-.dial-volume {
-    position: absolute;
-    right: 3%;
-    top: 43%;
-    width: 23%;
-    height: 14%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 10px;
-    z-index: 4;
-    text-align: center;
-    font-size: clamp(12px, 1.7vw, 21px);
-    letter-spacing: -.05rem
-}
-
-.dial-volume input {
-    width: 90%;
-    margin: auto;
-    accent-color: #000;
-    cursor: pointer
-}
-
-.station-caption {
-    text-align: center;
-    min-height: 48px;
-    padding: 12px;
-    font-size: 15px
-}
-
-.station-caption p {
-    margin: 0 0 5px
-}
-
-.station-caption p:empty {
-    display: none
-}
-
-.chat-panel {
-    margin: 8px auto 24px;
-    width: min(740px, 92%);
-    text-align: center
-}
-
-.chat-panel summary {
-    cursor: pointer;
-    list-style: none;
-    font-size: 24px
-}
-
-.chat-panel summary::-webkit-details-marker {
-    display: none
-}
-
-.chat-panel summary:after {
-    content: ' — OPEN';
-    font-size: 13px
-}
-
-.chat-panel[open] summary:after {
-    content: ' — CLOSE'
-}
-
-.chat-panel iframe {
-    border: 0;
-    width: 100%;
-    height: 400px;
-    margin-top: 18px
-}
-
-.twitch-section {
-    max-width: 740px;
-    margin: 20px auto
-}
-
-#twitchPlayer {
-    height: 416px;
-    min-height: 300px
-}
-
-.twitch-mobile {
-    display: none
-}
-
 footer {
     background: white;
     color: black;
@@ -936,30 +530,6 @@ footer button {
         height: 90px
     }
 
-    .dial {
-        width: 98vw
-    }
-
-    .dial-action {
-        font-size: clamp(22px, 6vw, 40px)
-    }
-
-    .action-source span {
-        font-size: 10px
-    }
-
-    .station-caption {
-        font-size: 13px
-    }
-
-    .twitch-section {
-        margin: 16px 12px
-    }
-
-    #twitchPlayer {
-        height: 300px
-    }
-
     footer {
         padding: 24px 12px;
         display: flex;
@@ -980,59 +550,10 @@ footer button {
     }
 }
 
-@media(max-width:423px) {
-    #twitchPlayer {
-        display: none
-    }
-
-    .twitch-mobile {
-        display: block;
-        text-align: center;
-        padding: 18px;
-        background: #eee
-    }
-}
-
 @media(prefers-reduced-motion:reduce) {
     .marquee {
         animation: none
     }
-}
-
-/* Keep the entire logo visible, without a circular backdrop or crop. */
-.dial-center {
-    border-radius: 0;
-    overflow: visible;
-    background: none;
-    box-shadow: none
-}
-
-.dial {
-    background: none
-}
-
-.logo-fill {
-    border-radius: 0
-}
-
-.logo-img {
-    object-fit: contain
-}
-
-.dial-center .logo-fill {
-    mask-size: contain;
-    -webkit-mask-size: contain
-}
-
-.dial-fields {
-    display: none
-}
-
-.dial-action,
-.dial-volume,
-.post>button {
-    font-family: Arial, sans-serif;
-    font-weight: 700
 }
 
 .post {
@@ -1095,10 +616,6 @@ footer button {
     .archive-reveal {
         transition: none
     }
-}
-
-.dial-fields {
-    display: block
 }
 
 #radioChat {
@@ -1289,75 +806,13 @@ footer button {
 .archive-marquee-track {
     display: flex;
     width: max-content;
-    gap: 12px;
-    animation: archive-drift 70s linear infinite
-}
-
-.archive-marquee-track a {
-    flex: 0 0 130px;
-    width: 130px;
-    height: 130px
+    gap: 12px
 }
 
 .archive-marquee-track img {
     width: 100%;
     height: 100%;
     object-fit: cover
-}
-
-@media(hover:hover) and (pointer:fine) {
-
-    .archive-marquee:hover .archive-marquee-track,
-    .archive-marquee:focus-within .archive-marquee-track {
-        animation-play-state: paused
-    }
-}
-
-@keyframes archive-drift {
-    to {
-        transform: translateX(-50%)
-    }
-}
-
-.live-banner[data-state=archive] {
-    color: #00ff00
-}
-
-.offline-recording {
-    width: min(900px, 94%);
-    margin: 20px auto;
-    background: #eee;
-    padding: 16px
-}
-
-.offline-recording h2 {
-    font-size: clamp(22px, 3vw, 38px);
-    font-weight: 400;
-    margin: 8px 0
-}
-
-.offline-recording img {
-    width: 150px;
-    height: 150px;
-    object-fit: contain;
-    float: left;
-    margin: 0 20px 12px 0
-}
-
-.offline-recording:after {
-    content: '';
-    display: block;
-    clear: both
-}
-
-.offline-recording audio {
-    display: block;
-    width: 100%;
-    margin-top: 14px
-}
-
-.offline-recording a {
-    text-decoration: underline
 }
 
 .station-description {
@@ -1421,55 +876,14 @@ footer button {
         height: 30px
     }
 
-    .archive-marquee-track a {
-        width: 90px;
-        height: 90px;
-        flex-basis: 90px
-    }
-
-    .offline-recording img {
-        width: 100px;
-        height: 100px
-    }
-
     .press-entry {
         grid-template-columns: 1fr;
         gap: 8px
     }
 }
 
-@media(prefers-reduced-motion:reduce) {
-    .archive-marquee-track {
-        animation: none
-    }
-}
-
 .marquee span {
     white-space: nowrap
-}
-
-.live-banner[data-state=archive] .marquee span {
-    font-size: clamp(28px, 5vw, 64px);
-    line-height: 1.15;
-    align-self: center
-}
-
-@media(max-width:700px) {
-    .live-banner[data-state=archive] .marquee span {
-        font-size: clamp(20px, 6vw, 40px)
-    }
-}
-
-.weather-image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain
-}
-
-.dial-center {
-    background: none;
-    overflow: visible
 }
 
 .cooperation a {
@@ -1492,28 +906,6 @@ footer button {
     overflow: hidden
 }
 
-/* Persistent player shell: circle at home, compact controls on other pages. */
-.dial-center {
-    inset: 27%;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    overflow: hidden;
-    cursor: pointer;
-    background: none
-}
-
-.weather-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover
-}
-
-.dial-center:focus-visible {
-    outline: 4px solid #00ff00;
-    outline-offset: 4px
-}
-
 #chatButton {
     color: #00ff00
 }
@@ -1532,98 +924,6 @@ footer button {
     display: none
 }
 
-.subpage .player-shell {
-    padding: 12px 24px;
-    background: #eee;
-    display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(120px, 1fr);
-    align-items: center;
-    gap: 12px
-}
-
-.subpage .player-shell .dial {
-    width: 100%;
-    aspect-ratio: auto;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    border-radius: 0;
-    order: 0
-}
-
-.subpage .dial-fields,
-.subpage .dial-center,
-.subpage #chatButton {
-    display: none
-}
-
-.subpage .dial-action {
-    position: static;
-    width: auto;
-    height: auto;
-    border-radius: 0;
-    font-size: 16px;
-    line-height: 1;
-    padding: 4px 0
-}
-
-.subpage .dial-volume {
-    position: static;
-    width: auto;
-    height: auto;
-    flex: 1;
-    flex-direction: row;
-    align-items: center;
-    font-size: 12px;
-    gap: 10px
-}
-
-.subpage .dial-volume input {
-    width: 100px;
-    max-width: 100%;
-    margin: 0
-}
-
-.subpage .station-caption {
-    text-align: left;
-    margin: 0;
-    padding: 0;
-    font-size: 14px;
-    min-height: 0
-}
-
-.subpage #offlineRecording {
-    grid-column: 1/-1
-}
-
-.subpage .player-shell>audio {
-    display: none
-}
-
-@media(max-width:700px) {
-    .subpage .player-shell {
-        padding: 10px 12px;
-        grid-template-columns: 1fr
-    }
-
-    .subpage .player-shell .dial {
-        gap: 18px
-    }
-
-    .subpage .dial-volume {
-        justify-content: flex-end
-    }
-
-    .subpage .dial-volume input {
-        width: 110px
-    }
-
-    .subpage .station-caption {
-        font-size: 12px
-    }
-}
-
 /* Keep marquee words separated at narrow widths. */
 .live-banner .marquee {
     width: max-content
@@ -1636,37 +936,11 @@ footer button {
     padding: 0 12px
 }
 
-/* Offline playback uses half the LIVE banner height and type size. */
-.live-banner[data-state=archive] {
-    height: 40px
-}
-
-.live-banner[data-state=archive] .marquee span {
-    font-size: 40px;
-    line-height: .9
-}
-
-@media(max-width:700px) {
-    .live-banner[data-state=archive] {
-        height: 27.5px
-    }
-
-    .live-banner[data-state=archive] .marquee span {
-        font-size: 27.5px
-    }
-}
-
-
 /* Twitch remains below all page content; no cover, clipping or visibility toggles. */
 .twitch-dock {
     width: min(100%, 640px);
     margin: 36px auto;
     padding: 0 0 24px
-}
-
-.twitch-dock>p {
-    font-size: 13px;
-    margin: 0 12px 12px
 }
 
 #twitchDock .twitch-audio-engine {
@@ -1689,48 +963,6 @@ footer button {
     border: 0
 }
 
-.offline-recording {
-    position: relative;
-    clear: both;
-    display: block;
-    width: min(900px, 94%);
-    margin: 24px auto;
-    padding: 20px;
-    background: #eee
-}
-
-.offline-recording .action-next,
-.offline-recording #returnLive {
-    position: static;
-    display: inline-block;
-    width: auto;
-    height: auto;
-    margin: 16px 20px 0 0;
-    padding: 6px 0;
-    border: 0;
-    background: none;
-    color: #000;
-    font: 700 15px Arial;
-    text-decoration: underline;
-    cursor: pointer
-}
-
-.offline-recording>a {
-    display: inline-block;
-    margin-right: 20px
-}
-
-.offline-recording .action-next {
-    margin-left: 0
-}
-
-/* Only the compact audio controls remain at the top during inner-page scrolling. */
-.subpage .player-shell {
-    position: sticky;
-    top: 0;
-    z-index: 30
-}
-
 .subpage .table-head {
     position: static
 }
@@ -1741,62 +973,6 @@ footer button {
         animation-play-state: running;
         will-change: transform
     }
-
-    .archive-marquee .archive-marquee-track {
-        animation: archive-drift 70s linear infinite;
-        animation-play-state: running;
-        will-change: transform
-    }
-}
-
-/* Persistent recording controls, with a home-only expanded card. */
-.subpage #offlineRecording {
-    display: none !important;
-}
-
-.station-caption .action-next {
-    position: static;
-    width: auto;
-    height: auto;
-    padding: 6px 0;
-    margin: 4px 0;
-    background: none;
-    border: 0;
-    font: 700 16px Arial;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-#currentShowTitle a {
-    position: relative;
-    color: inherit;
-}
-
-.current-recording-preview {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    width: 160px;
-    height: 160px;
-    object-fit: cover;
-    z-index: 40;
-}
-
-@media(hover:hover) and (pointer:fine) {
-    .subpage #currentShowTitle a:hover .current-recording-preview {
-        display: block;
-    }
-}
-
-.subpage #currentShowTitle a:focus-visible .current-recording-preview {
-    display: block;
-}
-
-.live-banner[data-state="archive"] .marquee span {
-    width: auto;
-    min-width: 0;
-    padding-inline: 3vw;
 }
 
 .post[id] {
@@ -1832,176 +1008,12 @@ footer button {
     cursor: pointer;
 }
 
-.home #headerListenLive {
-    display: none;
-}
-
-.twitch-dock.in-circle {
-    position: fixed;
-    margin: 0;
-    padding: 0;
-    z-index: 20;
-    border-radius: 50%;
-    overflow: hidden;
-    clip-path: circle(50%);
-    background: #fff;
-}
-
-.twitch-dock.in-circle #twitchDock .twitch-audio-engine {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: max(900px, 160vw);
-    height: max(600px, 90vw);
-    min-height: 600px;
-    transform: translate(-50%, -50%);
-}
-
-.twitch-in-circle #weatherPlay {
-    visibility: hidden;
-}
-
-.twitch-play-hint {
-    position: absolute;
-    left: 52%;
-    top: 32%;
-    transform: translateY(-100%);
-    z-index: 25;
-    background: #39ff14;
-    color: #000;
-    border-radius: 22px;
-    padding: 12px 18px;
-    font: 700 clamp(12px, 2vw, 19px) Arial;
-    white-space: nowrap;
-    pointer-events: none;
-}
-
-.twitch-play-hint:after {
-    content: "";
-    position: absolute;
-    left: 10px;
-    top: 100%;
-    border-left: 0 solid transparent;
-    border-right: 20px solid transparent;
-    border-top: 28px solid #39ff14;
-}
-
 /* Twitch playback belongs to the native embed; archive controls remain active. */
 #playButton:disabled {
     color: #aaa;
     opacity: .55;
     cursor: default;
     pointer-events: none;
-}
-
-.twitch-play-hint {
-    left: 50%;
-    top: 29%;
-    transform: translate(-50%, -100%);
-    border-radius: 9px;
-    padding: 8px 12px;
-    font: 700 clamp(11px, 1.5vw, 15px) Arial;
-}
-
-.twitch-play-hint:after {
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 12px solid #39ff14;
-}
-
-/* Native document scrolling keeps the circular embed aligned without scroll handlers. */
-.twitch-dock {
-    position: relative;
-}
-
-.twitch-dock.in-circle {
-    position: absolute;
-}
-
-#twitchWeatherCover {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: #fff;
-    cursor: pointer;
-}
-
-#twitchWeatherCover[hidden] {
-    display: none;
-}
-
-#twitchWeatherCover img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* The real Airtime embed is a fallback only; normal playback uses our dial. */
-.twitch-dock[hidden] {
-    display: none !important;
-}
-
-.airtime-widget .dial {
-    background: none;
-}
-
-.airtime-widget .dial-fields,
-.airtime-widget #playButton,
-.airtime-widget #muteButton,
-.airtime-widget .dial-volume,
-.airtime-widget #weatherPlay {
-    visibility: hidden;
-}
-
-#airtimeWidget {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    overflow: hidden;
-    z-index: 20;
-}
-
-#airtimeWidget iframe {
-    position: absolute;
-    left: -75px;
-    top: -57px;
-    width: 350px;
-    height: 396px;
-    max-width: none;
-    border: 0;
-}
-
-.airtime-widget #twitchPlayHint {
-    top: calc(50% - 110px);
-}
-
-.airtime-widget #chatButton {
-    display: flex;
-    visibility: visible;
-}
-
-.subpage.airtime-widget .player-shell .dial {
-    display: block;
-    min-height: 310px;
-}
-
-.subpage.airtime-widget #chatButton {
-    position: absolute;
-    top: calc(50% + 115px);
-    left: 50%;
-    transform: translateX(-50%);
 }
 
 /* Stretch only lettering, preserving each control's box and any artwork. */
@@ -2019,13 +1031,13 @@ button .hover-label {
 
     a:hover .hover-label,
     button:enabled:hover .hover-label {
-        transform: scaleX(1.5);
+        transform: scaleX(1.3);
     }
 }
 
 a:focus-visible .hover-label,
 button:enabled:focus-visible .hover-label {
-    transform: scaleX(1.5);
+    transform: scaleX(1.3);
 }
 
 @media (prefers-reduced-motion:reduce) {
@@ -2075,27 +1087,6 @@ button:enabled:focus-visible .hover-label {
     -webkit-user-drag: none;
 }
 
-.live-banner[data-state="archive"] .marquee>span {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    height: 100%;
-    padding: 0 3vw 0 0;
-}
-
-.live-banner[data-state="archive"] .marquee img {
-    display: block;
-    flex: none;
-    height: 100%;
-    width: auto;
-    aspect-ratio: 1;
-    object-fit: cover;
-}
-
-.live-banner[data-state="archive"] .marquee {
-    animation-duration: 30s;
-}
-
 @media(max-width:700px) {
     .archive-marquee-track>img {
         flex-basis: 90px;
@@ -2124,18 +1115,18 @@ button[aria-expanded="true"] .hover-label,
 #cooperationEmail text {
     transform-box: view-box;
     transform-origin: 50% 50%;
-    transform: scaleX(.666667);
+    transform: none;
     transition: transform 180ms ease;
 }
 
 @media(hover:hover) and (pointer:fine) {
     #cooperationEmail:hover text {
-        transform: scaleX(1);
+        transform: scaleX(1.3);
     }
 }
 
 #cooperationEmail:focus-visible text {
-    transform: scaleX(1);
+    transform: scaleX(1.3);
 }
 
 @media(prefers-reduced-motion:reduce) {
@@ -2147,21 +1138,11 @@ button[aria-expanded="true"] .hover-label,
 /* Brief touch feedback, including the SVG email lettering. */
 a.tap-feedback .hover-label,
 button.tap-feedback .hover-label {
-    transform: scaleX(1.5);
+    transform: scaleX(1.3);
 }
 
 #cooperationEmail.tap-feedback text {
-    transform: scaleX(1);
-}
-
-/* Invert the entire rendered page while muted, including its background. */
-html.radio-muted {
-    filter: invert(1);
-}
-
-#weatherPlay {
-    cursor: default;
-    pointer-events: none;
+    transform: scaleX(1.3);
 }
 
 #openSearch {
@@ -2253,4 +1234,317 @@ html.radio-muted {
     #siteSearch {
         padding: 16px;
     }
+}
+
+/* v3.4 — one player bar on every page, plus a homepage logo masked with the weather image. */
+.player-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 24px;
+    background: #eee;
+}
+
+.bar-control {
+    flex: none;
+    border: 0;
+    background: none;
+    padding: 6px 0;
+    font: 700 16px Arial, sans-serif;
+    white-space: nowrap;
+    cursor: pointer
+}
+
+.bar-volume {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: 700 12px Arial, sans-serif
+}
+
+.bar-volume input {
+    width: 110px;
+    accent-color: #000;
+    cursor: pointer
+}
+
+.recording-thumb {
+    flex: none;
+    display: block;
+    width: 48px;
+    height: 48px;
+    line-height: 0;
+    background: #ddd
+}
+
+.recording-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover
+}
+
+.player-bar-status {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px
+}
+
+.player-bar-status p {
+    margin: 0
+}
+
+.player-bar-status p:empty {
+    display: none
+}
+
+/* The bar keeps the same controls on inner pages. */
+.player-bar #chatButton {
+    display: inline-block;
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none
+}
+
+/* Big homepage logo below the archive artwork strip, filled by the weather webcam. */
+.home-logo {
+    display: none
+}
+
+.home .home-logo {
+    display: block;
+    padding: 24px 24px 0
+}
+
+.home-logo .logo-fill {
+    position: relative;
+    inset: auto;
+    width: min(100%, 1000px);
+    margin: 0 auto;
+    aspect-ratio: 1348 / 852;
+    border-radius: 0;
+    background-color: #fff;
+    background-image: url('https://opendata.dwd.de/weather/webcam/Offenbach-O/Offenbach-O_latest_1920.jpg');
+    background-size: 130% auto;
+    background-position: center;
+    -webkit-mask: url('/material/logofinalb.png') center/contain no-repeat;
+    mask: url('/material/logofinalb.png') center/contain no-repeat
+}
+
+/* Airtime fallback is a small fixed widget now that the dial is gone. */
+#airtimeWidget {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    width: 300px;
+    height: 340px;
+    z-index: 60;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 6px 24px #0003
+}
+
+#airtimeWidget iframe {
+    position: absolute;
+    inset: 0;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    border: 0
+}
+
+@media(max-width:700px) {
+    .player-bar {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 10px 12px
+    }
+
+    .player-bar-status {
+        order: 10;
+        flex-basis: 100%
+    }
+
+    .recording-thumb {
+        width: 40px;
+        height: 40px
+    }
+
+    .bar-volume input {
+        width: 80px
+    }
+}
+
+/* Final player layout: metadata and progress stay above the controls. */
+.player-bar {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    padding: 10px 24px;
+}
+
+.player-bar-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 1fr) 80px;
+    gap: 20px;
+    align-items: center;
+    min-width: 0;
+}
+
+.player-bar-status {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    font-size: 16px;
+    line-height: 1.1;
+}
+
+.player-bar-status p:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.player-bar-status p:first-child.is-marquee {
+    text-overflow: clip;
+}
+
+.player-bar-status p:first-child.is-marquee a {
+    display: inline-block;
+    animation: player-title-marquee 12s ease-in-out infinite alternate;
+    transform: translateX(0);
+}
+
+.player-bar-status p:last-child {
+    font-size: 14px;
+}
+
+.player-bar-status p+p {
+    margin-top: 4px;
+}
+
+.player-progress {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    height: 8px;
+    accent-color: #000;
+}
+
+.recording-thumb {
+    grid-column: 3;
+    grid-row: 1;
+    width: 80px;
+    height: 80px;
+    justify-self: end;
+}
+
+.player-bar-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+}
+
+.player-bar-controls #nextButton {
+    margin-left: auto;
+}
+
+.bar-volume {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+}
+
+.bar-volume .bar-control {
+    font-size: 16px;
+}
+
+@keyframes player-title-marquee {
+    to {
+        transform: translateX(calc(-1 * var(--player-title-distance)));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .player-bar-status p:first-child.is-marquee a {
+        animation: none;
+    }
+}
+
+/* Return to the original width, with a restrained 30% hover expansion. */
+a .hover-label,
+button .hover-label {
+    transform: none;
+}
+
+@media (hover:hover) and (pointer:fine) {
+
+    a:hover .hover-label,
+    button:enabled:hover .hover-label {
+        transform: scaleX(1.3);
+    }
+}
+
+a:focus-visible .hover-label,
+button:enabled:focus-visible .hover-label,
+a.tap-feedback .hover-label,
+button.tap-feedback .hover-label {
+    transform: scaleX(1.3);
+}
+
+#cooperationEmail text {
+    transform: none;
+}
+
+@media (hover:hover) and (pointer:fine) {
+    #cooperationEmail:hover text {
+        transform: scaleX(1.3);
+    }
+}
+
+#cooperationEmail:focus-visible text,
+#cooperationEmail.tap-feedback text {
+    transform: scaleX(1.3);
+}
+
+@media(max-width:700px) {
+    .player-bar {
+        padding: 10px 12px;
+    }
+
+    .player-bar-top {
+        grid-template-columns: minmax(0, 1fr) 64px;
+        grid-template-rows: auto auto;
+        gap: 6px 12px;
+    }
+
+    .player-bar-status {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .player-progress {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .recording-thumb {
+        grid-column: 2;
+        grid-row: 1 / 3;
+        width: 64px;
+        height: 64px;
+    }
+
+    .player-bar-controls {
+        flex-wrap: wrap;
+        gap: 10px 16px;
+    }
+
 }

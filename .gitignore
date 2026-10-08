@@ -1,0 +1,8 @@
+.DS_Store
+.vscode/
+content.local.txt
+.env
+.env.*
+!.env.example
+material/gallery-ATTENTION-autoupload/*
+!material/gallery-ATTENTION-autoupload/.gitkeep
