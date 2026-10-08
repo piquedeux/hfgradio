@@ -4,5 +4,31 @@ content.local.txt
 .env
 .env.*
 !.env.example
-material/gallery-ATTENTION-autoupload
-assets/fonts
+
+# Local uploads and generated site content
+/material/gallery-ATTENTION-autoupload/*
+!/material/gallery-ATTENTION-autoupload/.htaccess
+!/material/gallery-ATTENTION-autoupload/icon.png
+/material/uploads/
+/material/images/
+/uploads/
+/cache/
+/tmp/
+*.log
+
+# Credentials, tokens, certificates, and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.secret
+*.secrets
+*.token
+credentials.*
+service-account*.json
+credentials/
+secrets/
+
+# Local-only dependencies and generated assets
+assets/fonts/
