@@ -4,12 +4,11 @@ const banner = document.getElementById("liveBanner"),
   audio = document.getElementById("radioAudio"),
   play = document.getElementById("playButton"),
   next = document.getElementById("nextButton"),
-  message = document.getElementById("playerMessage");
-const offlineRecording = document.getElementById("offlineRecording");
+  message = document.getElementById("playerMessage"),
+  progress = document.getElementById("playerProgress");
 let currentRecording = null;
 let airtimeStream = "", airtimeTitle = "", airtimeFallback = false;
 let stream = "",
-  stationState = "unknown",
   stationTitle = "",
   mode = "idle",
   pending = false,
@@ -23,11 +22,9 @@ let stream = "",
   twitchTitle = "",
   source = "azura",
   wantsPlayback = false;
-let twitchObservedLive = null,
-  twitchInitialized = false,
+let twitchInitialized = false,
   twitchPlaying = false,
-  twitchCommand = null,
-  twitchCommandTime = 0;
+  twitchCommand = null;
 
 function archive() {
   return (
@@ -57,7 +54,6 @@ function setVolume(value) {
   }
   audio.volume = value;
   audio.muted = value === 0;
-  document.documentElement.classList.toggle("radio-muted", value === 0);
   document.getElementById("volume").value = String(value);
   if (value > 0) lastVolume = value;
   const b = document.getElementById("muteButton");
@@ -84,7 +80,6 @@ function commandTwitch(playing) {
     document.dispatchEvent(new Event("radio-play"));
     archiveWidgetPlaying = false;
     mode = "twitch";
-    offlineRecording.hidden = true;
   }
   wantsPlayback = playing;
   twitchCommand = playing;
@@ -127,34 +122,60 @@ function playbackUI() {
   if (next) next.hidden = !["archive", "ident", "embed"].includes(mode);
   updateTwitchVisibility();
 }
+function updateProgress() {
+  if (!progress) return;
+  const available = ["archive", "ident"].includes(mode) &&
+    Number.isFinite(audio.duration) && audio.duration > 0;
+  progress.hidden = !available;
+  if (available) progress.value = audio.currentTime / audio.duration;
+}
+function updateTitleMarquee() {
+  if (!message) return;
+  message.classList.remove("is-marquee");
+  message.style.removeProperty("--player-title-distance");
+  const distance = message.scrollWidth - message.clientWidth;
+  if (distance > 1) {
+    message.style.setProperty("--player-title-distance", `${distance}px`);
+    message.classList.add("is-marquee");
+  }
+}
 function renderStatus() {
   document.body.classList.toggle("twitch-live", twitchLive);
   updateTwitchVisibility();
   const archived = ["archive", "ident", "embed"].includes(mode);
   const live = hasLiveSource();
-  const archiveBanner = archived && !live;
-  banner.dataset.state = live ? "live" : archiveBanner ? "archive" : stationState;
-  banner.hidden = !archived && !live;
-  const recordingTitle = currentRecording?.title || copy("player.archive.label", "Archive recording");
-  banner.setAttribute("aria-label", live ? copy("player.live.aria", "Live on air") : recordingTitle);
-  const bannerKey = JSON.stringify([archiveBanner, recordingTitle, currentRecording?.artwork_url]);
-  if (banner.dataset.content !== bannerKey) {
-    banner.dataset.content = bannerKey;
-    banner.querySelectorAll(".marquee > span").forEach((el) => {
-      el.replaceChildren();
-      if (archiveBanner && currentRecording?.artwork_url) {
-        const image = document.createElement("img");
-        image.src = currentRecording.artwork_url;
-        image.alt = "";
-        image.draggable = false;
-        el.append(image);
-      }
-      el.append(document.createTextNode(archiveBanner ? recordingTitle : copy("player.live", "LIVE")));
-    });
-  }
+  // The banner exists only to mark a live broadcast.
+  banner.dataset.state = "live";
+  banner.hidden = !live;
+  banner.setAttribute("aria-label", copy("player.live.aria", "Live on air"));
+  const thumb = document.getElementById("recordingThumb");
+  const archiveSelected = ["archive", "ident", "embed"].includes(mode);
+  if (thumb) thumb.hidden = live || !archiveSelected || !currentRecording?.artwork_url;
   const airtimeSelected = mode === "airtime" || (!stream && !twitchLive && Boolean(airtimeStream));
-  message.textContent = !live ? copy("player.offair", "Currently off air") : airtimeSelected ? "" : copy("player.live.location", "Live from Offenbach");
-  document.getElementById("currentShowTitle").textContent = !live ? "" : airtimeSelected ? airtimeTitle : stream ? stationTitle : twitchLive ? twitchTitle : airtimeTitle;
+  const recordingTitle = archiveSelected ? currentRecording?.title || "" : "";
+  message.replaceChildren();
+  if (live) {
+    message.append(document.createTextNode(
+      (airtimeSelected ? airtimeTitle : stream ? stationTitle : twitchLive ? twitchTitle : airtimeTitle) ||
+      copy("player.live.location", "Live from Offenbach"),
+    ));
+  } else if (recordingTitle) {
+    const titleLink = document.createElement("a");
+    titleLink.href = currentRecording.id
+      ? "/archive/#recording-" + String(currentRecording.id).replace(/[^a-z0-9]/gi, "-")
+      : "/archive/";
+    titleLink.textContent = recordingTitle;
+    message.append(titleLink);
+  } else {
+    message.append(document.createTextNode(copy("player.offline", "OFF AIR")));
+  }
+  document.getElementById("currentShowTitle").textContent = live
+    ? copy("player.live.location", "Live from Offenbach")
+    : recordingTitle
+      ? copy("player.archive.offline", "OFF AIR CURRENTLY - PLAYING ARCHIVE RECORDING")
+      : "";
+  updateTitleMarquee();
+  updateProgress();
   const headerLive = document.getElementById("headerListenLive");
   if (headerLive) headerLive.hidden = !hasLiveSource() || !archived;
   const back = document.getElementById("returnLive");
@@ -179,7 +200,7 @@ function showAirtimeWidget() {
   frame.height = "396";
   frame.allow = "autoplay";
   crop.append(frame);
-  document.querySelector(".dial").append(crop);
+  document.body.append(crop);
   document.body.classList.add("airtime-widget");
   message.textContent = copy("player.airtime.hint", "Press play in the Airtime widget.");
   playbackUI();
@@ -194,54 +215,27 @@ function stopOtherSources() {
   if (archiveWidget) archiveWidget.pause();
   archiveWidgetPlaying = false;
 }
-function placeNextButton() {
-  if (!next) return;
-  const host = document.body.classList.contains("home") && currentRecording
-    ? offlineRecording : document.querySelector(".station-caption");
-  if (host && next.parentElement !== host) host.append(next);
-}
-document.addEventListener("page-change", placeNextButton);
-function showRecording(track, label) {
+function showRecording(track) {
   currentRecording = track;
-  offlineRecording.replaceChildren();
-  if (track.artwork_url) {
-    const image = document.createElement("img");
-    image.src = track.artwork_url;
-    image.alt = "";
-    offlineRecording.append(image);
+  const thumb = document.getElementById("recordingThumb");
+  if (thumb) {
+    const image = thumb.querySelector("img");
+    if (track.artwork_url) {
+      image.src = track.artwork_url;
+      thumb.href = track.id ? "/archive/#recording-" + String(track.id).replace(/[^a-z0-9]/gi, "-") : "/archive/";
+      thumb.setAttribute("aria-label", track.title || copy("player.archive.label", "Archive recording"));
+      thumb.hidden = false;
+    } else {
+      image.removeAttribute("src");
+      thumb.hidden = true;
+    }
   }
-  const state = document.createElement("p");
-  state.id = "recordingStatus";
-  state.textContent = label;
-  const heading = document.createElement("h2");
-  const titleLink = document.createElement("a");
-  titleLink.textContent = track.title || copy("archive.untitled", "Untitled recording");
-  titleLink.href = track.id ? "/archive/#recording-" + String(track.id).replace(/[^a-z0-9]/gi, "-") : "/archive/";
-  heading.append(titleLink);
-  const link = document.createElement("a");
-  link.href = track.permalink_url;
-  link.target = "_blank";
-  link.rel = "noopener";
-  link.textContent = copy("archive.open", "OPEN ON SOUNDCLOUD");
-  const back = document.createElement("button");
-  back.type = "button";
-  back.id = "returnLive";
-  back.textContent = copy("player.listen.live", "LISTEN LIVE");
-  back.hidden = !hasLiveSource();
-  back.addEventListener("click", () => {
-    stopOtherSources();
-    document.dispatchEvent(new Event("radio-play"));
-    mode = "idle";
-    startPlayback(true);
-  });
-  offlineRecording.append(state, heading, link, back);
-
-  offlineRecording.hidden = false;
-  placeNextButton();
 }
 function recordingStatus(text) {
-  const el = document.getElementById("recordingStatus");
-  if (el) el.textContent = text;
+  if (["archive", "embed", "ident"].includes(mode)) {
+    const status = document.getElementById("currentShowTitle");
+    if (status) status.textContent = text;
+  }
 }
 async function status() {
   await Promise.allSettled([
@@ -253,16 +247,10 @@ async function status() {
         });
         if (!r.ok) throw Error();
         const d = await r.json();
-        stationState = d.live?.is_live
-          ? "live"
-          : d.is_online
-            ? "autodj"
-            : "offline";
         stream =
           d.is_online || d.live?.is_live ? d.station?.listen_url || "" : "";
         stationTitle = d.now_playing?.song?.text || d.live?.streamer_name || "";
       } catch {
-        stationState = "unknown";
         stream = "";
         stationTitle = "";
       }
@@ -363,7 +351,6 @@ function initTwitch() {
             document.dispatchEvent(new Event("radio-play"));
             archiveWidgetPlaying = false;
             mode = "twitch";
-            offlineRecording.hidden = true;
           }
           wantsPlayback = true;
           twitchCommand = null;
@@ -401,12 +388,10 @@ function initTwitch() {
           playbackUI();
         });
         twitch.addEventListener(Twitch.Player.ONLINE, () => {
-          twitchObservedLive = true;
           twitchLive = true;
           renderStatus();
         });
         twitch.addEventListener(Twitch.Player.OFFLINE, () => {
-          twitchObservedLive = false;
           twitchLive = false;
           renderStatus();
           if (mode === "twitch" && wantsPlayback) {
@@ -439,13 +424,11 @@ async function startPlayback(userClick = true) {
     if (stream) {
       if (twitchInitialized && twitch) twitch.pause();
       mode = "live";
-      offlineRecording.hidden = true;
       renderStatus();
       if (audio.src !== stream) audio.src = stream;
       await audio.play();
     } else if (twitchLive) {
       mode = "twitch";
-      offlineRecording.hidden = true;
       renderStatus();
       const player = twitchInitialized ? twitch : await initTwitch();
       if (attempt !== operation) return;
@@ -453,19 +436,15 @@ async function startPlayback(userClick = true) {
     } else if (airtimeStream) {
       if (twitchInitialized && twitch) twitch.pause();
       mode = "airtime";
-      offlineRecording.hidden = true;
       renderStatus();
       if (audio.src !== airtimeStream) audio.src = airtimeStream;
       await audio.play();
     } else {
       mode = "ident";
-      showRecording(
-        {
-          title: copy("site.name", "HFG RADIO"),
-          permalink_url: "https://soundcloud.com/hfg-radio",
-        },
-        copy("archive.ident", "ARCHIVE \u00b7 Station ident"),
-      );
+      showRecording({
+        title: copy("archive.ident", "STATION IDENT-HFG-CHOIR"),
+        permalink_url: "https://soundcloud.com/hfg-radio",
+      });
       renderStatus();
       audio.src = "/assets/audio/station-ident.mp3";
       await audio.play();
@@ -502,14 +481,14 @@ async function nextRecording() {
     if (attempt !== operation) return;
     const track = queue.pop();
     if (!track) throw Error("empty");
-    showRecording(track, copy("archive.shuffle", "ARCHIVE \u00b7 Shuffled recording"));
+    showRecording(track);
     audio.src = track.audio_url;
     renderStatus();
     await audio.play();
   } catch {
     if (attempt === operation) {
       archivePromise = null;
-      recordingStatus(copy("archive.retry", "Archive unavailable. Press NEXT to retry."));
+      recordingStatus(copy("archive.retry", "Archive unavailable. Press PLAY to retry."));
     }
   } finally {
     if (attempt === operation) {
@@ -546,21 +525,23 @@ if (audio) {
     document.dispatchEvent(new Event("radio-play"));
     startPlayback(true);
   });
-  if (next)
-    next.addEventListener("click", () => {
-      if (["archive", "ident", "embed"].includes(mode)) nextRecording();
-    });
   audio.addEventListener("ended", () => {
     if (mode === "archive" || mode === "ident") nextRecording();
     else playbackUI();
   });
+  if (next)
+    next.addEventListener("click", () => {
+      if (["archive", "ident", "embed"].includes(mode)) nextRecording();
+    });
   for (const event of ["playing", "pause"])
     audio.addEventListener(event, playbackUI);
+  for (const event of ["timeupdate", "loadedmetadata", "durationchange", "emptied"])
+    audio.addEventListener(event, updateProgress);
   audio.addEventListener("error", () => {
     pending = false;
     if (mode === "archive" || mode === "ident")
       recordingStatus(
-        copy("archive.audio.error", "Audio unavailable. Press NEXT to try another recording."),
+        copy("archive.audio.error", "Audio unavailable. Press PLAY to retry."),
       );
     else if (mode === "airtime") showAirtimeWidget();
     else if (mode === "live")
@@ -570,6 +551,13 @@ if (audio) {
   document
     .getElementById("volume")
     .addEventListener("input", (e) => setVolume(Number(e.target.value)));
+  const volume = document.getElementById("volume");
+  document.getElementById("volumeToggle").addEventListener("click", () => {
+    const expanded = volume.hidden;
+    volume.hidden = !expanded;
+    document.getElementById("volumeToggle").setAttribute("aria-expanded", String(expanded));
+    if (expanded) volume.focus();
+  });
   document
     .getElementById("muteButton")
     .addEventListener("click", () =>
@@ -577,8 +565,9 @@ if (audio) {
     );
   const chat = document.getElementById("radioChat");
   if (chat) {
-    document.getElementById("chatButton").addEventListener("click", () => {
-      if (window.innerWidth <= 700) {
+    let pendingChatOpen = false;
+    const openChat = (forceInternal = false) => {
+      if (!forceInternal && window.innerWidth <= 700) {
         window.open("https://hfgstation.chatango.com/", "_blank", "noopener");
         return;
       }
@@ -598,6 +587,19 @@ if (audio) {
           : "smooth",
         block: "start",
       });
+    };
+    document.getElementById("chatButton").addEventListener("click", () => {
+      if (!document.body.classList.contains("home")) {
+        pendingChatOpen = true;
+        document.querySelector('nav a[href="/"]')?.click();
+        return;
+      }
+      openChat();
+    });
+    document.addEventListener("page-change", () => {
+      if (!pendingChatOpen || !document.body.classList.contains("home")) return;
+      pendingChatOpen = false;
+      openChat(true);
     });
     document
       .getElementById("closeChat")
@@ -699,6 +701,7 @@ const initialStatus = status().finally(() => {
 });
 for (const a of document.querySelectorAll("nav a"))
   if (a.pathname === location.pathname) a.setAttribute("aria-current", "page");
+window.addEventListener("resize", updateTitleMarquee, {passive: true});
 
 document.addEventListener("archive-play", (event) => {
   operation++;
@@ -708,7 +711,7 @@ document.addEventListener("archive-play", (event) => {
   mode = "embed";
   archiveWidget = null;
   archiveWidgetPlaying = false;
-  showRecording(event.detail, copy("archive.loading", "ARCHIVE \u00b7 Loading recording"));
+  showRecording(event.detail);
   renderStatus();
   playbackUI();
 });
@@ -723,7 +726,7 @@ document.addEventListener("archive-state", (event) => {
   archiveWidgetPlaying = state === "playing";
   recordingStatus(
     {
-      playing: copy("archive.playing", "Now playing \u00b7 Archive"),
+      playing: copy("player.archive.offline", "OFF AIR CURRENTLY - PLAYING ARCHIVE RECORDING"),
       paused: copy("archive.paused", "Paused \u00b7 Archive"),
       finished: copy("archive.finished", "Finished \u00b7 Archive"),
       error: copy("archive.error", "Archive unavailable \u00b7 Try another recording"),
@@ -737,7 +740,6 @@ document.addEventListener("archive-close", () => {
   archiveWidget = null;
   archiveWidgetPlaying = false;
   mode = "idle";
-  offlineRecording.hidden = true;
   renderStatus();
   playbackUI();
 });
@@ -749,30 +751,12 @@ document.addEventListener("archive-close", () => {
 function updateTwitchVisibility() {
   const dock = document.querySelector(".twitch-dock");
   const nativeTwitch = twitchLive && (mode === "twitch" || (!stream && mode === "idle"));
-  const inCircle = document.body.classList.contains("home") && nativeTwitch;
   const playingTwitch = mode === "twitch" && twitchPlaying;
   const disableStart = nativeTwitch && !playingTwitch && !pending;
   play.disabled = disableStart;
   play.setAttribute("aria-disabled", String(disableStart));
   play.title = disableStart ? copy("player.twitch.hint", "Use the Twitch player to start live audio") : "";
-  const cover = document.getElementById("twitchWeatherCover");
-  if (cover) cover.hidden = !playingTwitch;
-  document.body.classList.toggle("twitch-in-circle", inCircle);
-  const hint = document.getElementById("twitchPlayHint");
-  if (hint) hint.hidden = airtimeFallback ? false : !inCircle || (mode === "twitch" && twitchPlaying);
-  if (dock) {
-    dock.hidden = !twitchLive;
-    dock.classList.toggle("in-circle", inCircle);
-    if (inCircle) {
-      const rect = document.getElementById("weatherPlay").getBoundingClientRect();
-      dock.style.left = (rect.left + window.scrollX) + "px";
-      dock.style.top = (rect.top + window.scrollY) + "px";
-      dock.style.width = rect.width + "px";
-      dock.style.height = rect.height + "px";
-    } else {
-      dock.style.left = dock.style.top = dock.style.width = dock.style.height = "";
-    }
-  }
+  if (dock) dock.hidden = !twitchLive;
   const holder = document.getElementById("twitchAudioEngine");
   if (holder) {
     holder.removeAttribute("aria-hidden");
@@ -792,23 +776,6 @@ document.getElementById("headerListenLive")?.addEventListener("click", () => {
 });
 document.addEventListener("page-change", updateTwitchVisibility);
 window.addEventListener("resize", updateTwitchVisibility);
-// Document-relative positioning scrolls natively instead of chasing scroll events.
-let twitchLayoutFrame = 0;
-function scheduleTwitchLayout() {
-  if (twitchLayoutFrame) return;
-  twitchLayoutFrame = requestAnimationFrame(() => {
-    twitchLayoutFrame = 0;
-    updateTwitchVisibility();
-  });
-}
-if (typeof ResizeObserver !== "undefined") {
-  const layoutObserver = new ResizeObserver(scheduleTwitchLayout);
-  layoutObserver.observe(document.body);
-  layoutObserver.observe(document.querySelector(".player-shell"));
-}
-document.getElementById("twitchWeatherCover")?.addEventListener("click", () => {
-  if (mode === "twitch" && twitchInitialized) commandTwitch(false);
-});
 
 // Text wrappers survive changing PLAY/STOP labels and asynchronously loaded links.
 function prepareHoverLabels(root) {
@@ -862,4 +829,3 @@ document.addEventListener("click", (event) => {
     try { control.click(); } finally { replayedTapLinks.delete(control); }
   }, 140);
 }, true);
-
