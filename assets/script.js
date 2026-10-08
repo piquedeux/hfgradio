@@ -3,6 +3,7 @@ let archiveWidget = null,
 const banner = document.getElementById("liveBanner"),
   audio = document.getElementById("radioAudio"),
   play = document.getElementById("playButton"),
+  shuffle = document.getElementById("shuffleButton"),
   next = document.getElementById("nextButton"),
   message = document.getElementById("playerMessage"),
   progress = document.getElementById("playerProgress");
@@ -13,7 +14,6 @@ let stream = "",
   mode = "idle",
   pending = false,
   operation = 0,
-  lastVolume = 1,
   archivePromise = null,
   queue = [],
   twitch = null,
@@ -25,6 +25,32 @@ let stream = "",
 let twitchInitialized = false,
   twitchPlaying = false,
   twitchCommand = null;
+let volumeLabelLetters = [],
+  volumeLevel = 6,
+  volumeDirection = -1;
+
+function updateVolumeLabel(level) {
+  const button = document.getElementById("volumeToggle");
+  if (!button) return;
+  const label = level === 0 ? "UNMUTE" : "VOLUME";
+  if (!volumeLabelLetters.length || button.dataset.volumeLabel !== label) {
+    button.replaceChildren();
+    volumeLabelLetters = [];
+    volumeLabelLetters = [...label].map((letter) => {
+      const span = document.createElement("span");
+      span.className = "volume-letter";
+      span.textContent = letter;
+      button.append(span);
+      return span;
+    });
+    button.dataset.volumeLabel = label;
+  }
+  volumeLabelLetters.forEach((letter, index) => {
+    letter.classList.toggle("is-bold", index < level);
+    letter.classList.toggle("is-regular", index >= level);
+  });
+  button.dataset.volumeLevel = String(level);
+}
 
 function archive() {
   return (
@@ -45,6 +71,12 @@ function archive() {
   );
 }
 function setVolume(value) {
+  setVolumeLevel(value <= 0 ? 0 : Math.max(1, Math.min(6, Math.round(value * 6))));
+}
+
+function setVolumeLevel(level) {
+  volumeLevel = Math.max(0, Math.min(6, level));
+  const value = volumeLevel / 6;
   if (archiveWidget) archiveWidget.setVolume(value * 100);
   if (twitch) {
     try {
@@ -54,11 +86,7 @@ function setVolume(value) {
   }
   audio.volume = value;
   audio.muted = value === 0;
-  document.getElementById("volume").value = String(value);
-  if (value > 0) lastVolume = value;
-  const b = document.getElementById("muteButton");
-  b.textContent = value === 0 ? copy("player.unmute", "UNMUTE") : copy("player.mute", "MUTE");
-  b.setAttribute("aria-pressed", String(value === 0));
+  updateVolumeLabel(volumeLevel);
 }
 function hasLiveSource() {
   return twitchLive || Boolean(stream) || Boolean(airtimeStream);
@@ -173,7 +201,7 @@ function renderStatus() {
     ? copy("player.live.location", "Live from Offenbach")
     : recordingTitle
       ? copy("player.archive.offline", "OFF AIR CURRENTLY - PLAYING ARCHIVE RECORDING")
-      : "";
+      : copy("player.offline.archive", "SHUFFLE ARCHIVE RECORDINGS");
   updateTitleMarquee();
   updateProgress();
   const headerLive = document.getElementById("headerListenLive");
@@ -548,24 +576,17 @@ if (audio) {
       message.textContent = copy("player.live.error", "Live audio unavailable. Press PLAY to retry.");
     playbackUI();
   });
-  document
-    .getElementById("volume")
-    .addEventListener("input", (e) => setVolume(Number(e.target.value)));
-  const volume = document.getElementById("volume");
   document.getElementById("volumeToggle").addEventListener("click", () => {
-    const expanded = volume.hidden;
-    volume.hidden = !expanded;
-    document.getElementById("volumeToggle").setAttribute("aria-expanded", String(expanded));
-    if (expanded) volume.focus();
+    if (volumeLevel === 0) volumeDirection = 1;
+    if (volumeLevel === 6) volumeDirection = -1;
+    setVolumeLevel(volumeLevel + volumeDirection);
   });
-  document
-    .getElementById("muteButton")
-    .addEventListener("click", () =>
-      setVolume(audio.muted || audio.volume === 0 ? lastVolume : 0),
-    );
+  updateVolumeLabel(volumeLevel);
+  shuffle.addEventListener("click", nextRecording);
   const chat = document.getElementById("radioChat");
   if (chat) {
     let pendingChatOpen = false;
+    const chatButton = document.getElementById("chatButton");
     const openChat = (forceInternal = false) => {
       if (!forceInternal && window.innerWidth <= 700) {
         window.open("https://hfgstation.chatango.com/", "_blank", "noopener");
@@ -578,9 +599,7 @@ if (audio) {
         return;
       }
       chat.show();
-      document
-        .getElementById("chatButton")
-        .setAttribute("aria-expanded", "true");
+      chatButton.setAttribute("aria-expanded", "true");
       chat.scrollIntoView({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "instant"
@@ -588,7 +607,7 @@ if (audio) {
         block: "start",
       });
     };
-    document.getElementById("chatButton").addEventListener("click", () => {
+    chatButton.addEventListener("click", () => {
       if (!document.body.classList.contains("home")) {
         pendingChatOpen = true;
         document.querySelector('nav a[href="/"]')?.click();
@@ -605,9 +624,7 @@ if (audio) {
       .getElementById("closeChat")
       .addEventListener("click", () => chat.close());
     chat.addEventListener("close", () =>
-      document
-        .getElementById("chatButton")
-        .setAttribute("aria-expanded", "false"),
+      chatButton.setAttribute("aria-expanded", "false"),
     );
   }
 }
@@ -781,14 +798,14 @@ window.addEventListener("resize", updateTwitchVisibility);
 function prepareHoverLabels(root) {
   if (root.nodeType === Node.TEXT_NODE) {
     if (!root.textContent.trim() || !root.parentElement?.closest("a, button") ||
-        root.parentElement.closest(".hover-label, svg, script, style")) return;
+        root.parentElement.closest(".hover-label, .volume-letter, .chat-label, #volumeToggle, svg, script, style")) return;
     const label = document.createElement("span");
     label.className = "hover-label";
     root.replaceWith(label);
     label.append(root);
     return;
   }
-  if (root.nodeType !== Node.ELEMENT_NODE || root.closest(".hover-label, svg, script, style")) return;
+  if (root.nodeType !== Node.ELEMENT_NODE || root.closest(".hover-label, .volume-letter, .chat-label, #volumeToggle, svg, script, style")) return;
   for (const child of [...root.childNodes]) prepareHoverLabels(child);
 }
 prepareHoverLabels(document.body);
@@ -802,6 +819,7 @@ new MutationObserver((records) => {
 // commands in the trusted click so mobile browsers allow playback/popups.
 const tapTimers = new WeakMap();
 function showTapFeedback(control) {
+  if (control.id === "volumeToggle") return;
   clearTimeout(tapTimers.get(control));
   control.classList.add("tap-feedback");
   tapTimers.set(control, setTimeout(() => control.classList.remove("tap-feedback"), 360));
