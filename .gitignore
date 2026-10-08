@@ -4,6 +4,5 @@ content.local.txt
 .env
 .env.*
 !.env.example
-material/gallery-ATTENTION-autoupload/*
-!material/gallery-ATTENTION-autoupload/.gitkeep
+material/gallery-ATTENTION-autoupload
 assets/fonts
