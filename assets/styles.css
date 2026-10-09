@@ -951,9 +951,7 @@ footer button {
     scroll-margin-top: 20px
 }
 
-/* Twitch pauses and refuses to unmute a hidden player, so the live video stays
-   in the bottom-left corner. Opacity is kept just above invisible - 0 would
-   make the browser treat it as hidden and stop playback. */
+/* Keep Twitch visible and interactive for browsers requiring an embed gesture. */
 .twitch-dock {
     position: fixed;
     left: 0;
@@ -963,9 +961,7 @@ footer button {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    transform: scale(.6);
-    transform-origin: left bottom;
-    opacity: .05;
+    opacity: 1;
     z-index: 850;
     background: #000
 }
@@ -1037,9 +1033,13 @@ footer button {
 
 .live-banner .marquee span {
     flex: 0 0 auto;
-    width: 12.5vw;
-    min-width: 80px;
-    padding: 0 8px
+    width: 96px;
+    min-width: 0;
+    padding: 0 8px;
+    color: #f00;
+    font: 700 28px/1 Arial, sans-serif;
+    letter-spacing: 0;
+    transform: none
 }
 
 body.live-banner-open {

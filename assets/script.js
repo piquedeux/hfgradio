@@ -22,7 +22,7 @@ let stream = "",
   twitchTitle = "",
   source = "azura",
   wantsPlayback = false;
-// The hidden Twitch embed acts as a tuner: it streams muted while live and the
+// The visible Twitch embed acts as a tuner: it streams muted while live and the
 // site player only mutes/unmutes it. twitchPlaying marks the audible selection.
 let twitchInitialized = false,
   twitchPlaying = false,
@@ -163,6 +163,11 @@ function commandTwitch(playing) {
 }
 function verifyTwitchAudible() {
   if (mode !== "twitch" || twitchAudible()) return;
+  clearInterval(twitchUnmuteTimer);
+  twitchPlaying = false;
+  wantsPlayback = false;
+  pending = false;
+  playbackUI();
   message.textContent = copy("player.twitch.tap", "Press play in the Twitch player at the bottom left once to allow sound.");
 }
 function toggleTwitch() {
@@ -428,7 +433,8 @@ function initTwitch() {
         });
         // Reflect playback the user starts from the small player itself.
         twitch.addEventListener(Twitch.Player.PLAYING, () => {
-          if (!twitchLive) return;
+          // Muted autoplay is buffering, not a request to select live audio.
+          if (!twitchLive || !twitchAudible()) return;
           if (mode !== "twitch") {
             operation++;
             audio.pause();
@@ -455,9 +461,10 @@ function initTwitch() {
           if (mode !== "twitch") return;
           twitchPlaying = false;
           wantsPlayback = false;
-          mode = "idle";
+          clearInterval(twitchUnmuteTimer);
+          pending = false;
           renderStatus();
-          message.textContent = copy("player.twitch.start", "Press PLAY to start live audio.");
+          message.textContent = copy("player.twitch.tap", "Press play in the Twitch player at the bottom left once to allow sound.");
           playbackUI();
         });
         twitch.addEventListener(Twitch.Player.ONLINE, () => {
