@@ -1,6 +1,7 @@
 .DS_Store
 .vscode/
 content.local.txt
+content.txt
 .env
 .env.*
 !.env.example

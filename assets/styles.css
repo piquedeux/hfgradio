@@ -1,16 +1,66 @@
+@font-face {
+    font-family: "ABCAreal";
+    src: url("/assets/fonts/ABCAreal-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap
+}
+
+@font-face {
+    font-family: "ABCAreal";
+    src: url("/assets/fonts/ABCAreal-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap
+}
+
+@font-face {
+    font-family: "ABCAreal";
+    src: url("/assets/fonts/ABCAreal-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap
+}
+
+@font-face {
+    font-family: "ABCAreal";
+    src: url("/assets/fonts/ABCAreal-RegularItalic.woff2") format("woff2");
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap
+}
+
+@font-face {
+    font-family: "ABCAreal";
+    src: url("/assets/fonts/ABCAreal-MediumItalic.woff2") format("woff2");
+    font-weight: 500;
+    font-style: italic;
+    font-display: swap
+}
+
+@font-face {
+    font-family: "ABCAreal";
+    src: url("/assets/fonts/ABCAreal-BoldItalic.woff2") format("woff2");
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap
+}
+
 * {
     box-sizing: border-box
 }
 
 html {
     background: #fff;
-    color: #000
+    color: #000;
+    /* Height of the live marquee; also offsets the page below it. */
+    --live-banner-size: 34px
 }
 
 body {
     margin: 0;
     position: relative;
-    font-family: Arial, sans-serif;
+    font-family: "ABCAreal", Arial;
     font-size: clamp(15px, 1.25vw, 22px);
     line-height: 1.05;
     background: #fff;
@@ -87,7 +137,7 @@ button {
 }
 
 .clock-section text {
-    font-family: Arial, sans-serif;
+    font-family: "ABCAreal", Arial;
     font-weight: 400;
     font-size: 84px;
     fill: #000;
@@ -107,7 +157,7 @@ main {
 }
 
 .page-title h1 {
-    font-family: Arial, sans-serif;
+    font-family: "ABCAreal", Arial;
     font-stretch: normal;
     font-size: clamp(62px, 11vw, 180px);
     font-weight: 400;
@@ -266,7 +316,7 @@ main {
 }
 
 .prose-table p {
-    font-family: Arial, sans-serif;
+    font-family: "ABCAreal", Arial;
     font-stretch: normal;
     font-size: clamp(34px, 5vw, 76px);
     line-height: .95;
@@ -455,23 +505,24 @@ footer button {
     inset: 0 0 auto;
     overflow: hidden;
     color: red;
-    height: 80px;
+    height: var(--live-banner-size);
     z-index: 1000;
     pointer-events: none
 }
 
 .marquee {
     display: flex;
+    align-items: center;
     width: 200%;
-    height: 100%;
-    animation: live-scroll 12s linear infinite
+    height: 100%
 }
 
 .marquee span {
     flex: 0 0 12.5%;
     text-align: center;
-    font: 80px/.9 Arial, sans-serif;
-    letter-spacing: -.06em
+    font: 400 28px/.9 "ABCAreal", Arial;
+    letter-spacing: -.05em;
+    transform: scaleX(1.2)
 }
 
 @keyframes live-scroll {
@@ -552,18 +603,13 @@ footer button {
         width: 100%
     }
 
-    .live-banner {
-        height: 55px
+    html {
+        --live-banner-size: 28px
     }
 
-    .marquee span {
-        font-size: 55px
-    }
-}
-
-@media(prefers-reduced-motion:reduce) {
-    .marquee {
-        animation: none
+    .live-banner .marquee span {
+        font-size: 22px;
+        transform: scaleX(.8)
     }
 }
 
@@ -718,7 +764,7 @@ footer button {
 }
 
 .compact-player button {
-    font-family: Arial, sans-serif;
+    font-family: "ABCAreal", Arial;
     font-weight: 700;
     border: 0;
     background: none;
@@ -743,7 +789,7 @@ footer button {
 }
 
 .compact-player label {
-    font-family: Arial, sans-serif;
+    font-family: "ABCAreal", Arial;
     font-weight: 700;
     font-size: 12px
 }
@@ -782,7 +828,7 @@ footer button {
 }
 
 .drive-gallery-section h2 {
-    font: 400 18px Arial, sans-serif;
+    font: 400 18px "ABCAreal", Arial;
     margin: 0;
     padding: 12px 24px
 }
@@ -848,7 +894,7 @@ footer button {
 }
 
 .cooperation text {
-    font-family: Arial, sans-serif;
+    font-family: "ABCAreal", Arial;
     font-size: 64px
 }
 
@@ -905,16 +951,37 @@ footer button {
     scroll-margin-top: 20px
 }
 
-.twitch-audio-engine {
+/* Twitch pauses and refuses to unmute a hidden player, so the live video stays
+   in the bottom-left corner. Opacity is kept just above invisible - 0 would
+   make the browser treat it as hidden and stop playback. */
+.twitch-dock {
     position: fixed;
-    width: 400px;
-    height: 300px;
     left: 0;
     bottom: 0;
-    opacity: 0;
-    pointer-events: none;
-    z-index: -1;
-    overflow: hidden
+    width: 400px;
+    height: 300px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    transform: scale(.6);
+    transform-origin: left bottom;
+    opacity: .05;
+    z-index: 850;
+    background: #000
+}
+
+.twitch-dock[hidden] {
+    display: none
+}
+
+.twitch-audio-engine,
+#twitchDock,
+#twitchDock iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #000
 }
 
 #chatButton {
@@ -965,53 +1032,36 @@ footer button {
 
 .live-banner .marquee {
     width: max-content;
-    transform: translate3d(0, 0, 0);
     will-change: transform
 }
 
 .live-banner .marquee span {
     flex: 0 0 auto;
-    width: 25vw;
-    min-width: 160px;
-    padding: 0 12px
+    width: 12.5vw;
+    min-width: 80px;
+    padding: 0 8px
 }
 
-/* Twitch remains below all page content; no cover, clipping or visibility toggles. */
-.twitch-dock {
-    width: min(100%, 640px);
-    margin: 36px auto;
-    padding: 0 0 24px
+body.live-banner-open {
+    padding-top: var(--live-banner-size)
 }
 
-#twitchDock .twitch-audio-engine {
-    position: relative;
-    inset: auto;
-    width: 100%;
-    height: 360px;
-    min-height: 300px;
-    opacity: 1;
-    z-index: auto;
-    pointer-events: auto;
-    overflow: visible;
-    transform: none
-}
-
-#twitchDock iframe {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border: 0
+body.live-banner-open .player-bar {
+    top: var(--live-banner-size)
 }
 
 .subpage .table-head {
     position: static
 }
 
-@media(max-width:700px), (hover:none) {
+.live-banner[data-state="live"] .marquee {
+    animation: live-scroll 12s linear infinite;
+    will-change: transform
+}
+
+@media (prefers-reduced-motion: reduce) {
     .live-banner[data-state="live"] .marquee {
-        animation: live-scroll 12s linear infinite;
-        animation-play-state: running;
-        will-change: transform
+        animation: none
     }
 }
 
@@ -1019,40 +1069,14 @@ footer button {
     scroll-margin-top: 140px;
 }
 
-.twitch-dock {
-    width: 100%;
-    max-width: none;
-    margin: 36px 0 0;
-    padding: 0;
-    background: #fff;
-}
-
-#twitchDock {
-    width: 100%;
-    background: #fff;
-}
-
-#twitchDock .twitch-audio-engine {
-    height: max(300px, 56.25vw);
-    background: #fff;
-}
-
 #headerListenLive {
     border: 0;
     background: none;
     color: inherit;
-    font: 700 16px Arial;
+    font: 700 16px "ABCAreal", Arial;
     text-decoration: underline;
     padding: 6px 0;
     cursor: pointer;
-}
-
-/* Twitch playback belongs to the native embed; archive controls remain active. */
-#playButton:disabled {
-    color: #aaa;
-    opacity: .55;
-    cursor: default;
-    pointer-events: none;
 }
 
 /* Stretch only lettering, preserving each control's box and any artwork. */
@@ -1290,49 +1314,9 @@ button.tap-feedback .hover-label {
     border: 0;
     background: none;
     padding: 6px 0;
-    font: 700 16px Arial, sans-serif;
+    font: 700 16px "ABCAreal", Arial;
     white-space: nowrap;
     cursor: pointer
-}
-
-.bar-volume {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font: 700 12px Arial, sans-serif
-}
-
-.volume-letter {
-    display: inline-block;
-    font-weight: 400 !important;
-    font-family: Arial, sans-serif;
-    transition: font-weight 120ms linear;
-}
-
-.volume-letter.is-bold {
-    font-weight: 700 !important;
-    font-family: Arial, sans-serif;
-}
-
-.volume-letter.is-regular {
-    font-weight: 400 !important;
-}
-
-#volumeToggle,
-#volumeToggle:hover,
-#volumeToggle:focus-visible,
-#volumeToggle:active,
-#volumeToggle .volume-letter,
-#volumeToggle .volume-letter:hover,
-#volumeToggle .volume-letter:active,
-#volumeToggle .volume-letter:focus-visible,
-#volumeToggle .volume-letter .hover-label {
-    transform: none !important;
-}
-
-#volumeToggle * {
-    transform: none !important;
 }
 
 .recording-thumb {
@@ -1507,17 +1491,6 @@ button.tap-feedback .hover-label {
 
 .player-bar-controls #nextButton {
     margin-left: auto;
-}
-
-.bar-volume {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 16px;
-}
-
-.bar-volume .bar-control {
-    font-size: 16px;
 }
 
 @keyframes player-title-marquee {

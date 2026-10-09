@@ -22,35 +22,18 @@ let stream = "",
   twitchTitle = "",
   source = "azura",
   wantsPlayback = false;
+// The hidden Twitch embed acts as a tuner: it streams muted while live and the
+// site player only mutes/unmutes it. twitchPlaying marks the audible selection.
 let twitchInitialized = false,
   twitchPlaying = false,
-  twitchCommand = null;
-let volumeLabelLetters = [],
-  volumeLevel = 6,
-  volumeDirection = -1;
-
-function updateVolumeLabel(level) {
-  const button = document.getElementById("volumeToggle");
-  if (!button) return;
-  const label = level === 0 ? "UNMUTE" : "VOLUME";
-  if (!volumeLabelLetters.length || button.dataset.volumeLabel !== label) {
-    button.replaceChildren();
-    volumeLabelLetters = [];
-    volumeLabelLetters = [...label].map((letter) => {
-      const span = document.createElement("span");
-      span.className = "volume-letter";
-      span.textContent = letter;
-      button.append(span);
-      return span;
-    });
-    button.dataset.volumeLabel = label;
-  }
-  volumeLabelLetters.forEach((letter, index) => {
-    letter.classList.toggle("is-bold", index < level);
-    letter.classList.toggle("is-regular", index >= level);
-  });
-  button.dataset.volumeLevel = String(level);
-}
+  twitchApiLive = null,
+  twitchEmbedLive = null,
+  twitchDockEnabled = false,
+  twitchStatusResolve = null;
+// Resolves as soon as either the API or the embed reports a live status.
+const twitchStatusKnown = new Promise((resolve) => {
+  twitchStatusResolve = resolve;
+});
 
 function archive() {
   return (
@@ -70,84 +53,146 @@ function archive() {
       }))
   );
 }
-function setVolume(value) {
-  setVolumeLevel(value <= 0 ? 0 : Math.max(1, Math.min(6, Math.round(value * 6))));
-}
-
-function setVolumeLevel(level) {
-  volumeLevel = Math.max(0, Math.min(6, level));
-  const value = volumeLevel / 6;
-  if (archiveWidget) archiveWidget.setVolume(value * 100);
-  if (twitch) {
-    try {
-      twitch.setVolume(value);
-      twitch.setMuted(mode !== "twitch" || value === 0);
-    } catch {}
-  }
-  audio.volume = value;
-  audio.muted = value === 0;
-  updateVolumeLabel(volumeLevel);
-}
 function hasLiveSource() {
   return twitchLive || Boolean(stream) || Boolean(airtimeStream);
 }
+// Live is true when the metadata API or the embed reports it, so a single flaky
+// source can never switch a live broadcast back to the off-air ident.
+function applyTwitchLive() {
+  if (twitchStatusResolve) {
+    twitchStatusResolve();
+    twitchStatusResolve = null;
+  }
+  const live = twitchApiLive === true || twitchEmbedLive === true;
+  if (live === twitchLive) return;
+  twitchLive = live;
+  renderStatus();
+  if (!live && mode === "twitch") {
+    const resume = wantsPlayback;
+    stopOtherSources();
+    mode = "idle";
+    if (resume) startPlayback(true);
+  }
+}
 function twitchIsPlaying() {
+  return mode === "twitch" && twitchPlaying;
+}
+// Keep the tuner buffering while live, only cutting its sound.
+function silenceTwitch() {
+  twitchPlaying = false;
+  clearInterval(twitchUnmuteTimer);
+  if (!twitchInitialized || !twitch) return;
+  try {
+    twitch.setMuted(true);
+  } catch {}
+}
+// The player keeps streaming muted; the site player only toggles its sound.
+// Unmuting stays inside the click so the browser's gesture requirement holds.
+function unmuteTwitch() {
+  if (!twitchInitialized || !twitch) return;
+  try {
+    twitch.setVolume(1);
+    twitch.play();
+    twitch.setMuted(false);
+  } catch {}
+}
+function twitchAudible() {
   if (!twitchInitialized || !twitch) return false;
   try {
-    return !twitch.isPaused();
+    return twitch.getMuted() !== true && !twitch.isPaused();
   } catch {
-    return twitchPlaying;
+    return false;
   }
+}
+// The embed needs a moment to buffer, so keep re-asserting the sound after the
+// click until the player confirms it. That removes the old stop/play retry.
+let twitchUnmuteTimer = null;
+function ensureTwitchAudio() {
+  clearInterval(twitchUnmuteTimer);
+  let tries = 0;
+  const attempt = () => {
+    if (mode !== "twitch" || !twitchPlaying || twitchAudible()) {
+      clearInterval(twitchUnmuteTimer);
+      return;
+    }
+    unmuteTwitch();
+    if (++tries >= 10) clearInterval(twitchUnmuteTimer);
+  };
+  attempt();
+  twitchUnmuteTimer = setInterval(attempt, 500);
 }
 function commandTwitch(playing) {
   operation++;
-  const attempt = operation;
+  wantsPlayback = playing;
+  pending = false;
   if (playing) {
     audio.pause();
     if (archiveWidget) archiveWidget.pause();
     document.dispatchEvent(new Event("radio-play"));
     archiveWidgetPlaying = false;
     mode = "twitch";
-  }
-  wantsPlayback = playing;
-  twitchCommand = playing;
-  pending = playing;
-  renderStatus();
-  // Send the actual transport command synchronously from the user's click.
-  if (playing) {
-    twitch.setVolume(audio.volume);
-    twitch.setMuted(audio.muted);
-    twitch.play();
+    twitchPlaying = true;
   } else {
-    twitch.pause();
     twitchPlaying = false;
+    if (mode === "twitch") mode = "idle";
+    wantsPlayback = false;
+  }
+  renderStatus();
+  if (playing) {
+    unmuteTwitch();
+    ensureTwitchAudio();
+    // If the embed was still loading, unmute as soon as it reports ready.
+    if (!twitchInitialized) {
+      initTwitch().then(() => {
+        if (mode === "twitch" && twitchPlaying) {
+          unmuteTwitch();
+          ensureTwitchAudio();
+        }
+      }).catch(() => {});
+    }
+    setTimeout(verifyTwitchAudible, 4000);
+  } else {
+    clearInterval(twitchUnmuteTimer);
+    if (twitchInitialized && twitch) {
+      try {
+        twitch.setMuted(true);
+      } catch {}
+    }
   }
   playbackUI();
-  setTimeout(() => {
-    if (attempt !== operation || mode !== "twitch" || twitchCommand === null) return;
-    twitchPlaying = twitchIsPlaying();
-    twitchCommand = null;
-    pending = false;
-    wantsPlayback = twitchPlaying;
-    if (playing && !twitchPlaying) message.textContent = copy("player.twitch.permission", "Press PLAY in the Twitch player below to allow playback.");
-    playbackUI();
-  }, 4000);
+}
+function verifyTwitchAudible() {
+  if (mode !== "twitch" || twitchAudible()) return;
+  message.textContent = copy("player.twitch.tap", "Press play in the Twitch player at the bottom left once to allow sound.");
 }
 function toggleTwitch() {
-  commandTwitch(!(twitchCommand === null ? twitchIsPlaying() : twitchCommand));
+  commandTwitch(!twitchIsPlaying());
+}
+// SHUFFLE stays available and LISTEN LIVE is its own button, shown only while
+// a live source exists.
+function updateControls() {
+  const playingRecording = ["archive", "ident", "embed"].includes(mode);
+  const live = hasLiveSource();
+  if (shuffle) shuffle.hidden = false;
+  const headerLive = document.getElementById("headerListenLive");
+  if (headerLive) headerLive.hidden = !live;
+  if (next) next.hidden = !playingRecording;
+  const thumb = document.getElementById("recordingThumb");
+  // A playing recording keeps its artwork even while a live show is available.
+  if (thumb) thumb.hidden = !playingRecording || !currentRecording?.artwork_url;
+  const back = document.getElementById("returnLive");
+  if (back) back.hidden = !live;
 }
 function playbackUI() {
   const active =
     mode === "embed"
       ? archiveWidgetPlaying
       : mode === "twitch"
-        ? twitchCommand === null
-          ? twitchPlaying
-          : twitchCommand
+        ? twitchPlaying
         : !audio.paused;
   play.textContent = pending || active ? copy("player.stop", "STOP") : copy("player.play", "PLAY");
   play.setAttribute("aria-pressed", String(active));
-  if (next) next.hidden = !["archive", "ident", "embed"].includes(mode);
+  updateControls();
   updateTwitchVisibility();
 }
 function updateProgress() {
@@ -170,44 +215,42 @@ function updateTitleMarquee() {
 function renderStatus() {
   document.body.classList.toggle("twitch-live", twitchLive);
   updateTwitchVisibility();
-  const archived = ["archive", "ident", "embed"].includes(mode);
   const live = hasLiveSource();
-  // The banner exists only to mark a live broadcast.
+  const playingRecording = ["archive", "ident", "embed"].includes(mode);
+  const recordingTitle = playingRecording ? currentRecording?.title || "" : "";
+  // The banner exists only to mark a live broadcast; the CSS marquee animation
+  // starts on its own when the element becomes displayed.
   banner.dataset.state = "live";
   banner.hidden = !live;
+  // Push the page (and the sticky player bar) below the marquee strip.
+  document.body.classList.toggle("live-banner-open", live);
   banner.setAttribute("aria-label", copy("player.live.aria", "Live on air"));
-  const thumb = document.getElementById("recordingThumb");
-  const archiveSelected = ["archive", "ident", "embed"].includes(mode);
-  if (thumb) thumb.hidden = live || !archiveSelected || !currentRecording?.artwork_url;
+  updateControls();
   const airtimeSelected = mode === "airtime" || (!stream && !twitchLive && Boolean(airtimeStream));
-  const recordingTitle = archiveSelected ? currentRecording?.title || "" : "";
   message.replaceChildren();
-  if (live) {
-    message.append(document.createTextNode(
-      (airtimeSelected ? airtimeTitle : stream ? stationTitle : twitchLive ? twitchTitle : airtimeTitle) ||
-      copy("player.live.location", "Live from Offenbach"),
-    ));
-  } else if (recordingTitle) {
+  if (recordingTitle) {
+    // Titles of recordings stay visible while they play, even during a live show.
     const titleLink = document.createElement("a");
     titleLink.href = currentRecording.id
       ? "/archive/#recording-" + String(currentRecording.id).replace(/[^a-z0-9]/gi, "-")
       : "/archive/";
     titleLink.textContent = recordingTitle;
     message.append(titleLink);
+  } else if (live) {
+    message.append(document.createTextNode(
+      (airtimeSelected ? airtimeTitle : stream ? stationTitle : twitchLive ? twitchTitle : airtimeTitle) ||
+      copy("player.live.location", "Live from space"),
+    ));
   } else {
     message.append(document.createTextNode(copy("player.offline", "OFF AIR")));
   }
-  document.getElementById("currentShowTitle").textContent = live
-    ? copy("player.live.location", "Live from Offenbach")
-    : recordingTitle
-      ? copy("player.archive.offline", "OFF AIR CURRENTLY - PLAYING ARCHIVE RECORDING")
+  document.getElementById("currentShowTitle").textContent = playingRecording
+    ? copy("player.archive.playing", "PLAYING ARCHIVE RECORDING")
+    : live
+      ? copy("player.live.location", "Live from space")
       : copy("player.offline.archive", "SHUFFLE ARCHIVE RECORDINGS");
   updateTitleMarquee();
   updateProgress();
-  const headerLive = document.getElementById("headerListenLive");
-  if (headerLive) headerLive.hidden = !hasLiveSource() || !archived;
-  const back = document.getElementById("returnLive");
-  if (back) back.hidden = !hasLiveSource();
 }
 function clearAirtimeWidget() {
   airtimeFallback = false;
@@ -237,9 +280,7 @@ function stopOtherSources() {
   clearAirtimeWidget();
   updateTwitchVisibility();
   audio.pause();
-  twitchCommand = false;
-  if (twitchInitialized && twitch) twitch.pause();
-  twitchPlaying = false;
+  silenceTwitch();
   if (archiveWidget) archiveWidget.pause();
   archiveWidgetPlaying = false;
 }
@@ -291,8 +332,10 @@ async function status() {
         });
         if (!r.ok) throw Error();
         const d = await r.json();
-        twitchLive = d.live === true;
-        if (twitchLive) initTwitch().catch(() => {});
+        if (typeof d.live === "boolean") {
+          twitchApiLive = d.live;
+          applyTwitchLive();
+        }
         twitchTitle = d.title || twitchTitle;
       } catch {
         /* Embed events remain available when metadata service fails. */
@@ -308,6 +351,11 @@ async function status() {
       } catch { airtimeStream = ""; airtimeTitle = ""; }
     })(),
   ]);
+  // Load the tuner unless the metadata API is certain the channel is offline;
+  // on an inconclusive API the embed itself confirms live status.
+  twitchDockEnabled = twitchApiLive !== false;
+  updateTwitchVisibility();
+  if (twitchDockEnabled) initTwitch().catch(() => {});
   source = stream ? "azura" : twitchLive ? "twitch" : airtimeStream ? "airtime" : "archive";
   if (airtimeFallback && source !== "airtime") clearAirtimeWidget();
   if (!wantsPlayback && ((mode === "airtime" && source !== "airtime") || (mode === "twitch" && !twitchLive))) mode = "idle";
@@ -322,7 +370,7 @@ async function status() {
   ) {
     clearAirtimeWidget();
     audio.pause();
-    if (twitch) twitch.pause();
+    silenceTwitch();
     mode = "idle";
     startPlayback(false);
   }
@@ -357,76 +405,68 @@ function initTwitch() {
         twitch = new Twitch.Player(holder.id, {
           channel: "hfgradio",
           width: "100%",
-          height: 360,
+          height: "100%",
           parent: [location.hostname],
-          autoplay: false,
+          autoplay: true,
           muted: true,
         });
         twitch.addEventListener(Twitch.Player.READY, () => {
           clearTimeout(timer);
           twitchInitialized = true;
           updateTwitchVisibility();
+          // Muted autoplay needs no gesture, so the player starts buffering the
+          // live stream right away and unmuting later stays instant.
+          try {
+            twitch.play();
+          } catch {}
+          // A PLAY press that arrived while the embed was still loading.
+          if (mode === "twitch" && twitchPlaying) {
+            unmuteTwitch();
+            ensureTwitchAudio();
+          }
           resolve(twitch);
         });
-        // Native Twitch controls and our controls share the same confirmed state.
-        twitch.addEventListener(Twitch.Player.PLAY, () => {
-          twitch.setVolume(audio.volume);
-          twitch.setMuted(audio.muted);
+        // Reflect playback the user starts from the small player itself.
+        twitch.addEventListener(Twitch.Player.PLAYING, () => {
+          if (!twitchLive) return;
           if (mode !== "twitch") {
             operation++;
             audio.pause();
             if (archiveWidget) archiveWidget.pause();
-            document.dispatchEvent(new Event("radio-play"));
             archiveWidgetPlaying = false;
+            document.dispatchEvent(new Event("radio-play"));
             mode = "twitch";
           }
-          wantsPlayback = true;
-          twitchCommand = null;
           twitchPlaying = true;
+          wantsPlayback = true;
           pending = false;
           renderStatus();
-          playbackUI();
-        });
-        twitch.addEventListener(Twitch.Player.PLAYING, () => {
-          if (mode !== "twitch") return;
-          twitchCommand = null;
-          twitchPlaying = true;
-          wantsPlayback = true;
-          pending = false;
           playbackUI();
         });
         twitch.addEventListener(Twitch.Player.PAUSE, () => {
           // PAUSE is a real pause, never a buffering signal.
+          if (mode !== "twitch") return;
           twitchPlaying = false;
-          twitchCommand = null;
-          if (mode === "twitch") {
-            pending = false;
-            wantsPlayback = false;
-          }
+          wantsPlayback = false;
+          message.textContent = copy("player.twitch.paused", "Live audio paused. Press PLAY to resume.");
           playbackUI();
         });
         twitch.addEventListener(Twitch.Player.PLAYBACK_BLOCKED, () => {
-          twitchCommand = null;
+          if (mode !== "twitch") return;
           twitchPlaying = false;
-          pending = false;
           wantsPlayback = false;
-          updateTwitchVisibility();
-          message.textContent =
-            copy("player.twitch.start", "Start live audio in the Twitch player below the page.");
+          mode = "idle";
+          renderStatus();
+          message.textContent = copy("player.twitch.start", "Press PLAY to start live audio.");
           playbackUI();
         });
         twitch.addEventListener(Twitch.Player.ONLINE, () => {
-          twitchLive = true;
-          renderStatus();
+          twitchEmbedLive = true;
+          applyTwitchLive();
         });
         twitch.addEventListener(Twitch.Player.OFFLINE, () => {
-          twitchLive = false;
-          renderStatus();
-          if (mode === "twitch" && wantsPlayback) {
-            stopOtherSources();
-            mode = "idle";
-            startPlayback(true);
-          }
+          twitchEmbedLive = false;
+          applyTwitchLive();
         });
       } catch {
         fail();
@@ -445,12 +485,18 @@ async function startPlayback(userClick = true) {
   try {
     if (!statusLoaded) await initialStatus;
     if (attempt !== operation) return;
+    // If neither source has reported yet, give the embed a moment so a live
+    // broadcast is not mistaken for the off-air ident.
+    if (twitchApiLive === null && twitchEmbedLive === null) {
+      await Promise.race([twitchStatusKnown, new Promise((resolve) => setTimeout(resolve, 3000))]);
+      if (attempt !== operation) return;
+    }
     audio.pause();
     if (archiveWidget) archiveWidget.pause();
     archiveWidgetPlaying = false;
-    if (!twitchLive && twitchInitialized && twitch) twitch.pause();
+    if (!twitchLive) silenceTwitch();
     if (stream) {
-      if (twitchInitialized && twitch) twitch.pause();
+      silenceTwitch();
       mode = "live";
       renderStatus();
       if (audio.src !== stream) audio.src = stream;
@@ -462,7 +508,7 @@ async function startPlayback(userClick = true) {
       if (attempt !== operation) return;
       commandTwitch(true);
     } else if (airtimeStream) {
-      if (twitchInitialized && twitch) twitch.pause();
+      silenceTwitch();
       mode = "airtime";
       renderStatus();
       if (audio.src !== airtimeStream) audio.src = airtimeStream;
@@ -576,12 +622,6 @@ if (audio) {
       message.textContent = copy("player.live.error", "Live audio unavailable. Press PLAY to retry.");
     playbackUI();
   });
-  document.getElementById("volumeToggle").addEventListener("click", () => {
-    if (volumeLevel === 0) volumeDirection = 1;
-    if (volumeLevel === 6) volumeDirection = -1;
-    setVolumeLevel(volumeLevel + volumeDirection);
-  });
-  updateVolumeLabel(volumeLevel);
   shuffle.addEventListener("click", nextRecording);
   const chat = document.getElementById("radioChat");
   if (chat) {
@@ -737,13 +777,13 @@ document.addEventListener("archive-state", (event) => {
   const { state, widget } = event.detail;
   if (widget) archiveWidget = widget;
   if (state === "ready") {
-    widget.setVolume(audio.muted ? 0 : audio.volume * 100);
+    widget.setVolume(100);
     return;
   }
   archiveWidgetPlaying = state === "playing";
   recordingStatus(
     {
-      playing: copy("player.archive.offline", "OFF AIR CURRENTLY - PLAYING ARCHIVE RECORDING"),
+      playing: copy("player.archive.playing", "PLAYING ARCHIVE RECORDING"),
       paused: copy("archive.paused", "Paused \u00b7 Archive"),
       finished: copy("archive.finished", "Finished \u00b7 Archive"),
       error: copy("archive.error", "Archive unavailable \u00b7 Try another recording"),
@@ -763,23 +803,11 @@ document.addEventListener("archive-close", () => {
 
 
 
-// Load the Twitch embed only after a positive live-status response.
-
+// Twitch only plays - and only accepts a user gesture - while its player is
+// visible, so the dock is shown whenever a broadcast may be live.
 function updateTwitchVisibility() {
   const dock = document.querySelector(".twitch-dock");
-  const nativeTwitch = twitchLive && (mode === "twitch" || (!stream && mode === "idle"));
-  const playingTwitch = mode === "twitch" && twitchPlaying;
-  const disableStart = nativeTwitch && !playingTwitch && !pending;
-  play.disabled = disableStart;
-  play.setAttribute("aria-disabled", String(disableStart));
-  play.title = disableStart ? copy("player.twitch.hint", "Use the Twitch player to start live audio") : "";
-  if (dock) dock.hidden = !twitchLive;
-  const holder = document.getElementById("twitchAudioEngine");
-  if (holder) {
-    holder.removeAttribute("aria-hidden");
-    const frame = holder.querySelector("iframe");
-    if (frame) frame.tabIndex = 0;
-  }
+  if (dock) dock.hidden = !twitchDockEnabled;
 }
 
 document.getElementById("headerListenLive")?.addEventListener("click", () => {
@@ -792,20 +820,19 @@ document.getElementById("headerListenLive")?.addEventListener("click", () => {
   }
 });
 document.addEventListener("page-change", updateTwitchVisibility);
-window.addEventListener("resize", updateTwitchVisibility);
 
 // Text wrappers survive changing PLAY/STOP labels and asynchronously loaded links.
 function prepareHoverLabels(root) {
   if (root.nodeType === Node.TEXT_NODE) {
     if (!root.textContent.trim() || !root.parentElement?.closest("a, button") ||
-        root.parentElement.closest(".hover-label, .volume-letter, .chat-label, #volumeToggle, svg, script, style")) return;
+        root.parentElement.closest(".hover-label, .chat-label, svg, script, style")) return;
     const label = document.createElement("span");
     label.className = "hover-label";
     root.replaceWith(label);
     label.append(root);
     return;
   }
-  if (root.nodeType !== Node.ELEMENT_NODE || root.closest(".hover-label, .volume-letter, .chat-label, #volumeToggle, svg, script, style")) return;
+  if (root.nodeType !== Node.ELEMENT_NODE || root.closest(".hover-label, .chat-label, svg, script, style")) return;
   for (const child of [...root.childNodes]) prepareHoverLabels(child);
 }
 prepareHoverLabels(document.body);
@@ -819,7 +846,6 @@ new MutationObserver((records) => {
 // commands in the trusted click so mobile browsers allow playback/popups.
 const tapTimers = new WeakMap();
 function showTapFeedback(control) {
-  if (control.id === "volumeToggle") return;
   clearTimeout(tapTimers.get(control));
   control.classList.add("tap-feedback");
   tapTimers.set(control, setTimeout(() => control.classList.remove("tap-feedback"), 360));
