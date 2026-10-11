@@ -38,3 +38,7 @@ assets/fonts/
 assets/audio/
 # Rebuildable public upload package
 /dist/
+
+#docker
+docker-compose.override.yml
+docker-compose.yml
