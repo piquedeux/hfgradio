@@ -34,5 +34,6 @@ secrets/
 
 # Local-only dependencies and generated assets
 assets/fonts/
+assets/audio/
 # Rebuildable public upload package
 /dist/
