@@ -45,6 +45,36 @@ function drive_photos(){
  }return $photos;
 }
 
+// Navigation entries stay hidden while their source has no content. The first HTML
+// answer uses only local files and existing caches; the browser asks again after paint.
+function press_cache_file(){return sys_get_temp_dir().'/hfg-press-v2-'.hash('sha256',__DIR__).'.json';}
+function press_entries(){
+ $cache=press_cache_file();
+ if(is_file($cache)&&time()-filemtime($cache)<300){$data=json_decode(file_get_contents($cache),true);if(is_array($data))return $data;}
+ $url='https://docs.google.com/spreadsheets/d/'.base64_decode('MVdQLU5BbnpDVDZURGxfZlZpbkVkcTZfRXVjellvMkZSd2VVenQ1MDladXc=').'/gviz/tq?tqx=out:csv';
+ $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>10]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
+ if($code!==200||!is_string($body)||str_contains(strtolower($body),'<html')){
+  if(is_file($cache)){$data=json_decode(file_get_contents($cache),true);if(is_array($data)){$data['stale']=true;return $data;}}
+  return null;
+ }
+ $fp=fopen('php://temp','r+');fwrite($fp,$body);rewind($fp);$entries=[];
+ while(($row=fgetcsv($fp,0,',','"',''))!==false){[$title,$link,$date]=array_pad($row,3,'');$title=trim($title);$link=trim($link);$date=trim($date);if(!$title||!filter_var($link,FILTER_VALIDATE_URL)||!in_array(parse_url($link,PHP_URL_SCHEME),['https','http'],true))continue;$entries[]=['title'=>$title,'url'=>$link,'date'=>$date];}fclose($fp);
+ $data=['entries'=>$entries,'stale'=>false];file_put_contents($cache,json_encode($data,JSON_INVALID_UTF8_SUBSTITUTE|JSON_UNESCAPED_SLASHES),LOCK_EX);return $data;
+}
+// null means "not verified yet": the entry stays visible instead of hiding real content.
+function gallery_has_content(){
+ $folder=__DIR__.'/material/gallery-ATTENTION-autoupload';
+ if(is_dir($folder))foreach(new DirectoryIterator($folder) as $file)if($file->isFile()&&!$file->isLink()&&in_array(strtolower($file->getExtension()),['jpg','jpeg','png','webp','gif'],true))return true;
+ $cache=drive_cache_dir().'/listing.json';
+ if(!is_file($cache))return null;
+ $rows=json_decode(file_get_contents($cache),true);
+ return is_array($rows)&&count($rows)>0;
+}
+function links_has_content(){
+ $data=is_file(press_cache_file())?json_decode(file_get_contents(press_cache_file()),true):null;
+ return is_array($data)?!empty($data['entries']):null;
+}
+
 $api=$_GET['api']??null;
 if(preg_match('~^/api/([a-z-]+)\.php$~',$path,$m))$api=$m[1];
 if($api!==null){switch($api){
@@ -179,14 +209,21 @@ case 'press':
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
-$cache=sys_get_temp_dir().'/hfg-press-v2-'.hash('sha256',__DIR__).'.json';
-if(is_file($cache)&&time()-filemtime($cache)<300){readfile($cache);exit;}
-$url='https://docs.google.com/spreadsheets/d/'.base64_decode('MVdQLU5BbnpDVDZURGxfZlZpbkVkcTZfRXVjellvMkZSd2VVenQ1MDladXc=').'/gviz/tq?tqx=out:csv';
-$ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>10]);$body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
-if($code!==200||!is_string($body)||str_contains(strtolower($body),'<html')){if(is_file($cache)){$data=json_decode(file_get_contents($cache),true);$data['stale']=true;echo json_encode($data);}else{http_response_code(502);echo json_encode(['error'=>'Press feed unavailable']);}exit;}
-$fp=fopen('php://temp','r+');fwrite($fp,$body);rewind($fp);$entries=[];
-while(($row=fgetcsv($fp,0,',','"',''))!==false){[$title,$link,$date]=array_pad($row,3,'');$title=trim($title);$link=trim($link);$date=trim($date);if(!$title||!filter_var($link,FILTER_VALIDATE_URL)||!in_array(parse_url($link,PHP_URL_SCHEME),['https','http'],true))continue;$entries[]=['title'=>$title,'url'=>$link,'date'=>$date];}fclose($fp);
-$json=json_encode(['entries'=>$entries,'stale'=>false],JSON_INVALID_UTF8_SUBSTITUTE|JSON_UNESCAPED_SLASHES);file_put_contents($cache,$json,LOCK_EX);echo $json;
+$data=press_entries();
+if($data===null){http_response_code(502);echo json_encode(['error'=>'Press feed unavailable']);exit;}
+echo json_encode($data,JSON_INVALID_UTF8_SUBSTITUTE|JSON_UNESCAPED_SLASHES);
+
+exit;
+case 'availability':
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+$gallery=gallery_has_content();
+if($gallery===null){drive_listing();$gallery=gallery_has_content();}
+$links=links_has_content();
+if($links===null){press_entries();$links=links_has_content();}
+// Unknown stays reported as available so a failing source never hides real content.
+echo json_encode(['gallery'=>$gallery!==false,'links'=>$links!==false]);
 
 exit;
 default:http_response_code(404);echo json_encode(['error'=>'Not found']);exit;}}
@@ -196,6 +233,7 @@ $route=$path==='/index.php'||trim($path,'/')===''?'/':'/'.trim($path,'/').'/';
 if(!isset($routes[$route])){http_response_code(404);echo content_text('site.notfound','Page not found');exit;}
 header('Cache-Control: no-cache');
 $page=$routes[$route];$titles=['home'=>content_value('page.home.title','Radio'),'archive'=>content_value('page.archive.title','Archive'),'gallery'=>content_value('page.gallery.title','Live in real life'),'links'=>content_value('page.links.title','Links'),'imprint'=>content_value('imprint.title','Imprint'),'colophon'=>content_value('colophon.title','Colophon')];$favicon_url=content_url('site.favicon.url','/material/logofinalb.png');
+$nav_available=['gallery'=>gallery_has_content(),'links'=>links_has_content()];
 ?>
 <!doctype html>
 <html lang="en">
@@ -213,6 +251,9 @@ $page=$routes[$route];$titles=['home'=>content_value('page.home.title','Radio'),
 <link rel="stylesheet" href="/assets/livestream.css?v=<?= substr(hash_file('sha256',__DIR__.'/assets/livestream.css'),0,12) ?>">
 <script id="siteContent" type="application/json">
 <?= json_encode($content,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_INVALID_UTF8_SUBSTITUTE) ?>
+</script>
+<script id="siteAvailability" type="application/json">
+<?= json_encode($nav_available) ?>
 </script>
 <script defer src="/assets/content.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/content.js'),0,12) ?>"></script>
 <script defer src="/assets/script.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/script.js'),0,12) ?>"></script>

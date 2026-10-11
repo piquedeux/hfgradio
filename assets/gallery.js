@@ -1,12 +1,13 @@
 // ── Gallery ──
 document.addEventListener("DOMContentLoaded", () => {
-  const { copy, fetchJSON, pageTask } = window.HFG;
+  const { copy, fetchJSON, pageTask, setNavAvailable } = window.HFG;
   const gallery = document.getElementById("gallery");
   const statusText = document.getElementById("galleryStatus");
   let signature = "";
   async function loadGallery() {
     try {
       const photos = await fetchJSON("gallery", 30000);
+      setNavAvailable("gallery", photos.length > 0);
 
       const next = JSON.stringify(photos);
       if (next === signature) return;

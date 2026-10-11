@@ -1,12 +1,13 @@
 // ── Press ──
 document.addEventListener("DOMContentLoaded", () => {
-  const { copy, fetchJSON, pageTask } = window.HFG;
+  const { copy, fetchJSON, pageTask, setNavAvailable } = window.HFG;
   async function loadPress() {
     const target = document.getElementById("linksEntries"),
       status = document.getElementById("linksStatus");
     if (!target || !status) return;
     try {
       const data = await fetchJSON("press");
+      setNavAvailable("links", data.entries.length > 0);
 
       target.replaceChildren();
       status.textContent = data.stale

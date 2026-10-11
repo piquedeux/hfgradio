@@ -66,6 +66,13 @@
         setInterval(run, interval);
       }
 
+      // Navigation entries appear only while their source has content.
+      const setNavAvailable = (name, available) => {
+        const link = document.querySelector(`[data-content-nav="${name}"]`);
+        if (link) link.hidden = !available;
+      };
+      window.HFG.setNavAvailable = setNavAvailable;
+
       // ── Intro: rasterize once, then move an ordinary canvas texture ──
       const introReady = (async () => {
         const overlay = document.getElementById("weatherIntro");
@@ -247,6 +254,22 @@
             );
         }, 1500),
       );
+      // The first HTML answer knows only local files and caches, so ask once after
+      // paint when the server could not tell whether a section has content.
+      const availability = JSON.parse(
+        document.getElementById("siteAvailability")?.textContent || "{}",
+      );
+      if (Object.values(availability).includes(null))
+        introReady.then(() =>
+          fetch("/index.php?api=availability", { priority: "low" })
+            .then((response) => (response.ok ? response.json() : null))
+            .then((data) => {
+              if (!data) return;
+              setNavAvailable("gallery", Boolean(data.gallery));
+              setNavAvailable("links", Boolean(data.links));
+            })
+            .catch(() => {}),
+        );
       const pauseHiddenMotion = () =>
         document.documentElement.classList.toggle(
           "motion-paused",

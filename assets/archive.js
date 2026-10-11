@@ -201,10 +201,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     } catch {
-      archiveStatus.textContent = copy(
-        "archive.load.error",
-        "SoundCloud could not load. Open our SoundCloud archive using the link above.",
-      );
+      // A missing feed must not surface an alarming error; the archive stays empty.
+      archiveStatus.textContent = "";
     }
   }
   pageTask("archive", async () => {
