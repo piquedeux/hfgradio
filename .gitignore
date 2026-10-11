@@ -10,7 +10,6 @@ content.txt
 # Local uploads and generated site content
 /material/
 /material/gallery-ATTENTION-autoupload/*
-!/material/gallery-ATTENTION-autoupload/.htaccess
 !/material/gallery-ATTENTION-autoupload/icon.png
 /material/uploads/
 /material/images/
@@ -39,6 +38,9 @@ assets/audio/
 # Rebuildable public upload package
 /dist/
 
-#docker
+# Docker / local deployment config (never publish; may contain tokens)
 docker-compose.override.yml
+docker-compose.override.yaml
+docker-compose-override.yml
+docker-compose-override.yaml
 docker-compose.yml
