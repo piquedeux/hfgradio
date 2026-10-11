@@ -306,6 +306,18 @@ main {
   margin: 0;
 }
 
+.post h2 .title-toggle {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+}
+
 .post button {
   grid-area: play;
   justify-self: start;

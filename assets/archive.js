@@ -1,6 +1,6 @@
 // ── Archive ──
 document.addEventListener("DOMContentLoaded", () => {
-  const { copy, fetchJSON, pageTask } = window.HFG;
+  const { copy, fetchJSON, pageTask, yieldTask } = window.HFG;
   const archiveStatus = document.getElementById("archiveStatus");
   const posts = document.getElementById("archivePosts");
   const known = new Map();
@@ -25,14 +25,24 @@ document.addEventListener("DOMContentLoaded", () => {
   function buildPost(sound) {
     const post = document.createElement("article");
     post.className = "post";
-    post.id = "recording-" + String(sound.id).replace(/[^a-z0-9]/gi, "-");
+    const anchor = "recording-" + String(sound.id).replace(/[^a-z0-9]/gi, "-");
+    post.id = anchor;
+    // Readable deep-link target derived from the SoundCloud recording name.
+    const slug = sound.slug || anchor;
+    post.dataset.slug = slug;
     const time = document.createElement("time");
     const date = new Date(sound.created_at);
     time.dateTime = date.toISOString();
     time.textContent = date.toLocaleDateString("de-DE");
-    const title = document.createElement("h2");
-    title.textContent =
+    const titleText =
       sound.title || copy("archive.untitled", "Untitled recording");
+    const title = document.createElement("h2");
+    const titleToggle = document.createElement("button");
+    titleToggle.type = "button";
+    titleToggle.className = "title-toggle";
+    titleToggle.textContent = titleText;
+    titleToggle.setAttribute("aria-expanded", "false");
+    title.append(titleToggle);
     const artist = document.createElement("span");
     artist.className = "artist";
     artist.textContent = sound.artist || "";
@@ -41,21 +51,34 @@ document.addEventListener("DOMContentLoaded", () => {
     button.textContent = copy("player.play", "PLAY");
     button.setAttribute(
       "aria-label",
-      copy("archive.play.label", "Play {title}", { title: sound.title }),
+      copy("archive.play.label", "Play {title}", { title: titleText }),
     );
     button.setAttribute("aria-expanded", "false");
     const panel = document.createElement("div");
     panel.className = "archive-reveal";
     panel.id = "track-" + sound.id.replace(/[^a-z0-9]/gi, "-");
     button.setAttribute("aria-controls", panel.id);
+    titleToggle.setAttribute("aria-controls", panel.id);
     const inner = document.createElement("div");
     panel.append(inner);
     let claimed = false;
     const close = () => {
       post.classList.remove("is-open");
       button.textContent = copy("player.play", "PLAY");
+      button.setAttribute(
+        "aria-label",
+        copy("archive.play.label", "Play {title}", { title: titleText }),
+      );
       button.setAttribute("aria-expanded", "false");
+      titleToggle.setAttribute("aria-expanded", "false");
       inner.replaceChildren();
+      // Drop the deep link once the recording is no longer open.
+      if (location.hash === "#" + slug)
+        history.replaceState(
+          history.state,
+          "",
+          location.pathname + location.search,
+        );
       if (active === close) {
         active = null;
         if (claimed) document.dispatchEvent(new Event("archive-close"));
@@ -90,8 +113,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       inner.append(iframe);
       post.classList.add("is-open");
-      button.textContent = copy("player.close", "CLOSE");
+      button.textContent = copy("archive.stop", "STOP");
+      button.setAttribute(
+        "aria-label",
+        copy("archive.stop.label", "Stop {title}", { title: titleText }),
+      );
       button.setAttribute("aria-expanded", "true");
+      titleToggle.setAttribute("aria-expanded", "true");
+      // Opening a recording makes its slug the shareable, reloadable URL.
+      history.replaceState(history.state, "", "#" + slug);
       loadWidgetAPI()
         .then((SC) => {
           if (active !== close || !iframe.isConnected) return;
@@ -161,6 +191,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (active === close) close();
       else open(true);
     });
+    // The title reveals the recording without starting playback.
+    titleToggle.addEventListener("click", () => {
+      if (active === close) close();
+      else open(false);
+    });
     post.addEventListener("archive-reveal", () => open(false));
     post.append(time, title, button, artist, panel);
     if (sound.artwork_url) {
@@ -200,7 +235,8 @@ document.addEventListener("DOMContentLoaded", () => {
           if (++rendered % 20 === 0) await yieldTask();
         }
       }
-    } catch {
+    } catch (error) {
+      console.error("archive load failed:", error);
       // A missing feed must not surface an alarming error; the archive stays empty.
       archiveStatus.textContent = "";
     }

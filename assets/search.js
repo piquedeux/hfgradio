@@ -1,6 +1,6 @@
 // ── Search ──
 document.addEventListener("DOMContentLoaded", () => {
-  const { copy, archive } = window.HFG;
+  const { copy, archive, archiveHref } = window.HFG;
   const dialog = document.getElementById("siteSearch");
   const query = document.getElementById("searchQuery");
   const results = document.getElementById("searchResults");
@@ -52,9 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
       entries.push({
         title: track.title,
         text: [track.title, track.artist, track.created_at].join(" "),
-        href:
-          "/archive/#recording-" +
-          String(track.id).replace(/[^a-z0-9]/gi, "-"),
+        href: archiveHref(track),
       });
     for (const link of document.querySelectorAll("#linksEntries a"))
       entries.push({

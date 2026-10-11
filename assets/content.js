@@ -10,4 +10,13 @@ window.HFG = window.HFG || {};
       text = text.replaceAll("{" + name + "}", String(value));
     return text;
   };
+  // Single source of truth for links that point at one archive recording.
+  window.HFG.archiveHref = (track) => {
+    const slug =
+      track?.slug ||
+      (track?.id
+        ? "recording-" + String(track.id).replace(/[^a-z0-9]/gi, "-")
+        : "");
+    return slug ? "/archive/#" + slug : "/archive/";
+  };
 })();

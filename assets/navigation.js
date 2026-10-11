@@ -24,18 +24,21 @@ document.addEventListener("DOMContentLoaded", () => {
         path.split("/").filter(Boolean).join("/") +
         (path.split("/").filter(Boolean).length ? "/" : "");
   function scrollToRecording(hash = location.hash) {
-    if (
-      normalize(location.pathname) !== "/archive/" ||
-      !hash.startsWith("#recording-")
-    )
-      return;
-    const entry = document.getElementById(hash.slice(1));
-    if (entry) {
-      entry.dispatchEvent(new Event("archive-reveal"));
-      requestAnimationFrame(() =>
-        entry.scrollIntoView({ block: "start" }),
-      );
+    if (normalize(location.pathname) !== "/archive/" || hash.length < 2) return;
+    let key = hash.slice(1);
+    try {
+      key = decodeURIComponent(key);
+    } catch {
+      // Keep the raw fragment when it is not valid percent-encoding.
     }
+    const posts = document.getElementById("archivePosts");
+    if (!posts) return;
+    const entry =
+      posts.querySelector(`[data-slug="${CSS.escape(key)}"]`) ||
+      document.getElementById(key);
+    if (!entry || !posts.contains(entry)) return;
+    entry.dispatchEvent(new Event("archive-reveal"));
+    requestAnimationFrame(() => entry.scrollIntoView({ block: "start" }));
   }
   document.addEventListener("archive-loaded", () => scrollToRecording());
   function show(path, push = false, hash = "") {

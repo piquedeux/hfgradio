@@ -5,7 +5,7 @@
     () => {
       "use strict";
 
-      const copy = window.HFG.copy;
+      const { copy, archiveHref } = window.HFG;
 
       // Shared lifecycle: paint the shell first; fetch only the visible page.
       const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -591,10 +591,7 @@
         if (recordingTitle) {
           // Titles of recordings stay visible while they play, even during a live show.
           const titleLink = document.createElement("a");
-          titleLink.href = currentRecording.id
-            ? "/archive/#recording-" +
-              String(currentRecording.id).replace(/[^a-z0-9]/gi, "-")
-            : "/archive/";
+          titleLink.href = archiveHref(currentRecording);
           titleLink.textContent = recordingTitle;
           message.append(titleLink);
         } else if (live) {
@@ -667,10 +664,7 @@
           const image = thumb.querySelector("img");
           if (track.artwork_url) {
             image.src = track.artwork_url;
-            thumb.href = track.id
-              ? "/archive/#recording-" +
-                String(track.id).replace(/[^a-z0-9]/gi, "-")
-              : "/archive/";
+            thumb.href = archiveHref(track);
             thumb.setAttribute(
               "aria-label",
               track.title || copy("player.archive.label", "Archive recording"),
@@ -1595,7 +1589,7 @@
           updateTwitchVisibility();
         });
 
-      Object.assign(window.HFG, { fetchJSON, pageTask, archive });
+      Object.assign(window.HFG, { fetchJSON, pageTask, archive, yieldTask });
     },
     { once: true },
   );

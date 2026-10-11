@@ -51,6 +51,36 @@ function archive_title_date(string $title): ?string {
  return null;
 }
 
+function archive_slugify(string $text): string {
+ $text=str_replace(['ä','ö','ü','ß','Ä','Ö','Ü','ẞ'],['ae','oe','ue','ss','ae','oe','ue','ss'],$text);
+ if(function_exists('iconv')){$ascii=@iconv('UTF-8','ASCII//TRANSLIT//IGNORE',$text);if($ascii!==false)$text=$ascii;}
+ // BSD/macOS iconv transliterates accented letters with a leading apostrophe ("Café" => "Caf'e").
+ $text=str_replace(["'",'`','´','’','‘'],'',$text);
+ $text=trim((string)preg_replace('~[^a-z0-9]+~','-',strtolower($text)),'-');
+ if(strlen($text)>80)$text=rtrim(substr($text,0,80),'-');
+ return $text!==''?$text:'recording';
+}
+
+// Deterministic and unique: a duplicate title gets its date (then a counter) appended,
+// so an existing recording keeps its permalink when new ones appear.
+function archive_apply_slugs(array $posts): array {
+ $used=[];
+ foreach($posts as &$post){
+  $base=archive_slugify((string)($post['title']??''));
+  $slug=$base;
+  if(isset($used[$slug])){
+   $date=substr((string)($post['created_at']??''),0,10);
+   $suffix=preg_match('~^\d{4}-\d{2}-\d{2}$~',$date)?$date:'archive';
+   $candidate=$base.'-'.$suffix;$slug=$candidate;
+   for($n=2;isset($used[$slug]);$n++)$slug=$candidate.'-'.$n;
+  }
+  $used[$slug]=true;
+  $post['slug']=$slug;
+ }
+ unset($post);
+ return $posts;
+}
+
 function archive_apply_overrides(array $data,array $overrides): array {
  foreach($data['posts'] as &$post){
   $original=$post['created_at'];
@@ -62,6 +92,7 @@ function archive_apply_overrides(array $data,array $overrides): array {
  }
  unset($post);
  usort($data['posts'],fn($a,$b)=>strtotime($b['created_at'])<=>strtotime($a['created_at']));
+ $data['posts']=archive_apply_slugs($data['posts']);
  return $data;
 }
 
