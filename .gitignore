@@ -8,6 +8,7 @@ content.txt
 .htaccess
 
 # Local uploads and generated site content
+/material/
 /material/gallery-ATTENTION-autoupload/*
 !/material/gallery-ATTENTION-autoupload/.htaccess
 !/material/gallery-ATTENTION-autoupload/icon.png
