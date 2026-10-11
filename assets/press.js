@@ -1,14 +1,13 @@
-(() => {
+// ── Press ──
+document.addEventListener("DOMContentLoaded", () => {
+  const { copy, fetchJSON, pageTask } = window.HFG;
   async function loadPress() {
     const target = document.getElementById("linksEntries"),
       status = document.getElementById("linksStatus");
     if (!target || !status) return;
     try {
-      const response = await fetch("/index.php?api=press");
-      if (!response.ok) throw Error();
-      const data = await response.json();
-      document.querySelector('[data-content-nav="links"]').hidden =
-        data.entries.length === 0;
+      const data = await fetchJSON("press");
+
       target.replaceChildren();
       status.textContent = data.stale
         ? copy("links.stale", "Showing saved links.")
@@ -29,9 +28,11 @@
         target.append(article);
       }
     } catch {
-      status.textContent = copy("links.error", "Links could not load. Please try again later.");
+      status.textContent = copy(
+        "links.error",
+        "Links could not load. Please try again later.",
+      );
     }
   }
-  loadPress();
-  setInterval(loadPress, 300000);
-})();
+  pageTask("links", loadPress);
+});

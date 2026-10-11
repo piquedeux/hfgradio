@@ -1,4 +1,6 @@
-(() => {
+// ── Navigation ──
+document.addEventListener("DOMContentLoaded", () => {
+  const { copy } = window.HFG;
   const routes = {
     "/": "home",
     "/archive/": "archive",
@@ -8,9 +10,12 @@
     "/colophon/": "colophon",
   };
   const titles = {
-    home: copy("page.home.title", "Radio"), archive: copy("page.archive.title", "Archive"),
-    gallery: copy("page.gallery.title", "Live in real life"), links: copy("page.links.title", "Links"),
-    imprint: copy("imprint.title", "Imprint"), colophon: copy("colophon.title", "Colophon")
+    home: copy("page.home.title", "Radio"),
+    archive: copy("page.archive.title", "Archive"),
+    gallery: copy("page.gallery.title", "Live in real life"),
+    links: copy("page.links.title", "Links"),
+    imprint: copy("imprint.title", "Imprint"),
+    colophon: copy("colophon.title", "Colophon"),
   };
   const normalize = (path) =>
     path === "/index.php"
@@ -19,11 +24,17 @@
         path.split("/").filter(Boolean).join("/") +
         (path.split("/").filter(Boolean).length ? "/" : "");
   function scrollToRecording(hash = location.hash) {
-    if (normalize(location.pathname) !== "/archive/" || !hash.startsWith("#recording-")) return;
+    if (
+      normalize(location.pathname) !== "/archive/" ||
+      !hash.startsWith("#recording-")
+    )
+      return;
     const entry = document.getElementById(hash.slice(1));
     if (entry) {
       entry.dispatchEvent(new Event("archive-reveal"));
-      requestAnimationFrame(() => entry.scrollIntoView({block:"start"}));
+      requestAnimationFrame(() =>
+        entry.scrollIntoView({ block: "start" }),
+      );
     }
   }
   document.addEventListener("archive-loaded", () => scrollToRecording());
@@ -45,7 +56,8 @@
         link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     }
-    document.title = titles[page] + " — " + copy("site.name", "HFG RADIO");
+    document.title =
+      titles[page] + " — " + copy("site.name", "HFG RADIO");
     if (push) history.pushState({ page }, "", route + hash);
     const chat = document.getElementById("radioChat");
     if (page !== "home" && chat.open) chat.close();
@@ -67,7 +79,13 @@
     )
       return;
     const link = event.target.closest("a[href]");
-    if (!link || link.target || link.hasAttribute("download")) return;
+    if (
+      !link ||
+      link.target ||
+      link.hasAttribute("download") ||
+      link.hasAttribute("data-full-reload")
+    )
+      return;
     const url = new URL(link.href, location.href);
     if (
       url.origin !== location.origin ||
@@ -78,10 +96,13 @@
     event.preventDefault();
     show(
       url.pathname,
-      normalize(location.pathname) !== normalize(url.pathname) || location.hash !== url.hash,
+      normalize(location.pathname) !== normalize(url.pathname) ||
+        location.hash !== url.hash,
       url.hash,
     );
   });
-  window.addEventListener("popstate", () => show(location.pathname, false, location.hash));
+  window.addEventListener("popstate", () =>
+    show(location.pathname, false, location.hash),
+  );
   show(location.pathname, false, location.hash);
-})();
+});

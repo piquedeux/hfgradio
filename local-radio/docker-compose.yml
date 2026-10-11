@@ -1,0 +1,64 @@
+#
+# AzuraCast Docker Compose Configuration File
+#
+# When updating, you will be prompted to replace this file with a new
+# version; you should do this whenever possible to take advantage of
+# new updates.
+#
+# If you need to customize this file, you can create a new file named:
+#   docker-compose.override.yml
+# with any changes you need to make.
+#
+
+name: hfgradio_local
+
+services:
+  web:
+    container_name: hfgradio_local
+    image: "ghcr.io/azuracast/azuracast:${AZURACAST_VERSION:-stable}"
+    labels:
+      - "com.centurylinklabs.watchtower.scope=azuracast"
+    # Want to customize the HTTP/S ports? Follow the instructions here:
+    # https://www.azuracast.com/docs/administration/docker/#using-non-standard-ports
+    ports:
+      - '127.0.0.1:8080:8080'
+      - '127.0.0.1:8443:8443'
+      - '127.0.0.1:8000:8000'
+      - '127.0.0.1:8005:8005'
+      - '127.0.0.1:8006:8006'
+    env_file:
+      - azuracast.env
+      - .env
+    volumes:
+      - station_data:/var/azuracast/stations
+      - backups:/var/azuracast/backups
+      - db_data:/var/lib/mysql
+      - www_uploads:/var/azuracast/storage/uploads
+      - shoutcast2_install:/var/azuracast/storage/shoutcast2
+      - stereo_tool_install:/var/azuracast/storage/stereo_tool
+      - rsas_install:/var/azuracast/storage/rsas
+      - geolite_install:/var/azuracast/storage/geoip
+      - sftpgo_data:/var/azuracast/storage/sftpgo
+      - acme:/var/azuracast/storage/acme
+    restart: "no"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+
+
+volumes:
+  db_data: { }
+  acme: { }
+  shoutcast2_install: { }
+  stereo_tool_install: { }
+  rsas_install: { }
+  geolite_install: { }
+  sftpgo_data: { }
+  station_data: { }
+  www_uploads: { }
+  backups: { }

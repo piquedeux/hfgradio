@@ -48,6 +48,8 @@ function drive_photos(){
 $api=$_GET['api']??null;
 if(preg_match('~^/api/([a-z-]+)\.php$~',$path,$m))$api=$m[1];
 if($api!==null){switch($api){
+case 'content-refresh':
+content_values(true);header('Cache-Control: no-store');http_response_code(204);exit;
 case 'archive':
 require_once __DIR__.'/includes/archive-overrides.php';
 header('Content-Type: application/json; charset=utf-8');
@@ -103,7 +105,7 @@ function coordinate($parts, $ref) {
     return round(($values[0]+$values[1]/60+$values[2]/3600) * (in_array($ref,['S','W'],true)?-1:1), 6);
 }
 $photos=[];$folder=__DIR__.'/material/gallery-ATTENTION-autoupload';
-foreach (new DirectoryIterator($folder) as $file) {
+foreach ((is_dir($folder) ? new DirectoryIterator($folder) : []) as $file) {
  if (!$file->isFile() || $file->isLink() || !in_array(strtolower($file->getExtension()), ['jpg','jpeg','png','webp','gif'],true)) continue;
  $path=$file->getPathname();$size=@getimagesize($path);if (!$size) continue;
  $exif=function_exists('exif_read_data') && in_array(strtolower($file->getExtension()),['jpg','jpeg'],true) ? (@exif_read_data($path,'EXIF,GPS',true) ?: []) : [];
@@ -147,12 +149,13 @@ curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>2,CU
 $body=curl_exec($ch);$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
 $data=is_string($body)?json_decode($body,true):null;
 if($code!==200||!is_array($data)||!array_key_exists('current',$data)){http_response_code(503);echo json_encode(['live'=>false]);exit;}
-// Airtime keeps its Icecast mount connected even while off air. Match its
-// own widget: a null current item means there is no broadcast to select.
+// A scheduled current show is live even during silence or when Airtime's
+// widget reports Off Air. The connected Icecast mount alone is not enough.
 $current=$data['current'];$live=is_array($current)&&!empty($current['type']);
 // Programme names belong to currentShow; current.name is the playing track.
 $showTitle='';
 foreach(($data['currentShow']??[]) as $show){
+ if(is_array($show)&&!empty($show))$live=true;
  if(is_array($show)&&is_string($show['name']??null)&&trim($show['name'])!==''){$showTitle=trim($show['name']);break;}
 }
 $title=$live?$showTitle:'';
@@ -191,5 +194,49 @@ if($path==='/chat.html'||($_GET['view']??'')==='chat'){require __DIR__.'/snippet
 $routes=['/'=>'home','/archive/'=>'archive','/live-in-real-life/'=>'gallery','/links/'=>'links','/imprint/'=>'imprint','/colophon/'=>'colophon'];
 $route=$path==='/index.php'||trim($path,'/')===''?'/':'/'.trim($path,'/').'/';
 if(!isset($routes[$route])){http_response_code(404);echo content_text('site.notfound','Page not found');exit;}
+header('Cache-Control: no-cache');
 $page=$routes[$route];$titles=['home'=>content_value('page.home.title','Radio'),'archive'=>content_value('page.archive.title','Archive'),'gallery'=>content_value('page.gallery.title','Live in real life'),'links'=>content_value('page.links.title','Links'),'imprint'=>content_value('imprint.title','Imprint'),'colophon'=>content_value('colophon.title','Colophon')];$favicon_url=content_url('site.favicon.url','/material/logofinalb.png');
-?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($titles[$page],ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?> — <?= content_text('site.name','HFG RADIO') ?></title><meta name="description" content="<?= content_text('site.description','HFG Radio. Independent radio from Offenbach am Main.') ?>"><link rel="icon" href="<?= $favicon_url ?>"><style>@font-face{font-family:ABCAreal;src:url('/assets/fonts/ABCAreal-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}@font-face{font-family:ABCAreal;src:url('/assets/fonts/ABCAreal-Medium.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}@font-face{font-family:ABCAreal;src:url('/assets/fonts/ABCAreal-Bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}@font-face{font-family:ABCAreal;src:url('/assets/fonts/ABCAreal-RegularItalic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}@font-face{font-family:ABCAreal;src:url('/assets/fonts/ABCAreal-MediumItalic.woff2') format('woff2');font-weight:500;font-style:italic;font-display:swap}@font-face{font-family:ABCAreal;src:url('/assets/fonts/ABCAreal-BoldItalic.woff2') format('woff2');font-weight:700;font-style:italic;font-display:swap}</style><link rel="stylesheet" href="/assets/styles.css?v=<?= filemtime(__DIR__.'/assets/styles.css') ?>"><script id="siteContent" type="application/json"><?= json_encode($content,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_INVALID_UTF8_SUBSTITUTE) ?></script><script defer src="/assets/content.js?v=<?= filemtime(__DIR__.'/assets/content.js') ?>"></script><script defer src="/assets/script.js?v=<?= filemtime(__DIR__.'/assets/script.js') ?>"></script><script defer src="/assets/archive.js?v=<?= filemtime(__DIR__.'/assets/archive.js') ?>"></script><script defer src="/assets/gallery.js?v=<?= filemtime(__DIR__."/assets/gallery.js") ?>"></script><script defer src="/assets/press.js?v=<?= filemtime(__DIR__."/assets/press.js") ?>"></script><script defer src="/assets/navigation.js?v=<?= filemtime(__DIR__."/assets/navigation.js") ?>"></script><script defer src="/assets/search.js?v=<?= filemtime(__DIR__ . "/assets/search.js") ?>"></script></head><body class="<?= $page==='home'?'home':'subpage '.$page.'-page' ?>"><a class="skip" href="#main"><?= content_text('site.skip','Skip to content') ?></a><?php require __DIR__.'/snippets/header.php'; require __DIR__.'/snippets/search.php'; require __DIR__.'/snippets/player.php'; ?><main id="main"><?php foreach($titles as $key=>$title): ?><div data-page="<?= $key ?>" <?= $page!==$key?'hidden':'' ?>><?php require __DIR__.'/snippets/'.$key.'.php'; ?></div><?php endforeach; ?></main><?php require __DIR__.'/snippets/footer.php'; ?><canvas id="dotPatternCanvas" aria-hidden="true"></canvas><script defer src="/assets/dots.js?v=<?= filemtime(__DIR__."/assets/dots.js") ?>"></script></body></html>
+?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preload" as="image" href="/material/logofinalb.png">
+<link rel="preload" as="font" type="font/woff2" href="/assets/fonts/ABCAreal-Regular.woff2" crossorigin>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>
+<?= htmlspecialchars($titles[$page],ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?> — <?= content_text('site.name','HFG RADIO') ?>
+</title>
+<meta name="description" content="<?= content_text('site.description','HFG Radio. Independent radio from Offenbach am Main.') ?>">
+<link rel="icon" href="<?= $favicon_url ?>">
+<link rel="stylesheet" href="/assets/styles.css?v=<?= substr(hash_file('sha256',__DIR__.'/assets/styles.css'),0,12) ?>">
+<link rel="stylesheet" href="/assets/livestream.css?v=<?= substr(hash_file('sha256',__DIR__.'/assets/livestream.css'),0,12) ?>">
+<script id="siteContent" type="application/json">
+<?= json_encode($content,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_INVALID_UTF8_SUBSTITUTE) ?>
+</script>
+<script defer src="/assets/content.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/content.js'),0,12) ?>"></script>
+<script defer src="/assets/script.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/script.js'),0,12) ?>"></script>
+<script defer src="/assets/archive.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/archive.js'),0,12) ?>"></script>
+<script defer src="/assets/gallery.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/gallery.js'),0,12) ?>"></script>
+<script defer src="/assets/press.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/press.js'),0,12) ?>"></script>
+<script defer src="/assets/navigation.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/navigation.js'),0,12) ?>"></script>
+<script defer src="/assets/search.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/search.js'),0,12) ?>"></script>
+<script defer src="/assets/dots.js?v=<?= substr(hash_file('sha256',__DIR__.'/assets/dots.js'),0,12) ?>"></script>
+</head>
+<body class="<?= $page==='home'?'home':'subpage '.$page.'-page' ?>">
+<a class="skip" href="#main">
+<?= content_text('site.skip','Skip to content') ?>
+</a>
+<?php require __DIR__.'/snippets/live-banner.php'; require __DIR__.'/snippets/header.php'; require __DIR__.'/snippets/search.php'; require __DIR__.'/snippets/player.php'; ?>
+<main id="main">
+<?php foreach($titles as $key=>$title): ?>
+<div data-page="<?= $key ?>" <?= $page!==$key?'hidden':'' ?>>
+<?php require __DIR__.'/snippets/'.$key.'.php'; ?>
+</div>
+<?php endforeach; ?>
+</main>
+<?php require __DIR__.'/snippets/footer.php'; ?>
+<canvas id="dotPatternCanvas" aria-hidden="true">
+</canvas>
+</body>
+</html>

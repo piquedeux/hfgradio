@@ -5,6 +5,7 @@ content.txt
 .env
 .env.*
 !.env.example
+.htaccess
 
 # Local uploads and generated site content
 /material/gallery-ATTENTION-autoupload/*
@@ -33,3 +34,5 @@ secrets/
 
 # Local-only dependencies and generated assets
 assets/fonts/
+# Rebuildable public upload package
+/dist/

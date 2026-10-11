@@ -63,13 +63,15 @@ function content_atomic_write($file,$text) {
  $ok=file_put_contents($tmp,$text,LOCK_EX)!==false&&@rename($tmp,$file);
  if(is_file($tmp))unlink($tmp);return $ok;
 }
-function content_values() {
+function content_values($refresh = false) {
  $file=dirname(__DIR__).'/content.txt';
  $values=is_file($file)?content_parse_text(file_get_contents($file)):[];
  $sheet=base64_decode(HFG_CONTENT_SHEET,true);
  $cache=sys_get_temp_dir().'/hfg-content-editorial-v2-'.hash('sha256',__DIR__.$sheet).'.json';
  $saved=is_file($cache)?json_decode(file_get_contents($cache),true):null;
  if(is_array($saved))$values=array_replace($values,content_editorial_only($saved['values']??[]));
+ // HTML requests only read local data; the browser refreshes separately after paint.
+ if(!$refresh)return content_contact_links($values);
  if(is_array($saved)&&time()-($saved['checked']??0)<60)return content_contact_links($values);
  // One visitor refreshes; everyone else can use the last successful copy.
  $lock=fopen($cache.'.lock','c');
